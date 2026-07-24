@@ -1,0 +1,272 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --shadow-soft: 0 1px 2px 0 oklch(0.15 0.04 264 / 0.04), 0 1px 3px 0 oklch(0.15 0.04 264 / 0.06);
+  --shadow-elevated: 0 4px 12px -2px oklch(0.15 0.04 264 / 0.08), 0 2px 4px -2px oklch(0.15 0.04 264 / 0.04);
+  --shadow-glow: 0 0 0 1px oklch(0.36 0.135 261 / 0.1), 0 8px 24px -8px oklch(0.36 0.135 261 / 0.25);
+}
+
+:root {
+  --radius: 0.75rem;
+
+  /* AN-NOUR brand — navy (#001F5F) + gold (#F2A30C), sampled directly from
+     the logo (logoGroup.jpeg) and converted to OKLCH. Every semantic token
+     below derives from these two hues (261 = navy, 74 = gold) rather than
+     the previous generic Stripe indigo, so the whole platform reads as one
+     coherent identity instead of a handful of brand-colored accents. */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.18 0.04 260);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.04 260);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.04 260);
+
+  --primary: oklch(0.36 0.135 261);         /* brand navy #001F5F, lifted for UI legibility */
+  --primary-foreground: oklch(0.99 0 0);
+
+  --secondary: oklch(0.97 0.01 260);        /* near #f6f9fc */
+  --secondary-foreground: oklch(0.22 0.05 264);
+
+  --muted: oklch(0.97 0.008 260);
+  --muted-foreground: oklch(0.5 0.03 260);
+
+  --accent: oklch(0.95 0.02 261);
+  --accent-foreground: oklch(0.35 0.16 261);
+
+  --destructive: oklch(0.6 0.22 25);
+  --destructive-foreground: oklch(0.99 0 0);
+
+  --success: oklch(0.65 0.16 155);
+  --success-foreground: oklch(0.99 0 0);
+
+  --warning: oklch(0.77 0.16 74);           /* brand gold #F2A30C */
+  --warning-foreground: oklch(0.22 0.05 261);
+
+  --info: oklch(0.65 0.15 235);
+  --info-foreground: oklch(0.99 0 0);
+
+  --border: oklch(0.92 0.01 260);
+  --input: oklch(0.93 0.01 260);
+  --ring: oklch(0.36 0.135 261);
+
+  --chart-1: oklch(0.36 0.135 261);          /* navy */
+  --chart-2: oklch(0.65 0.16 155);
+  --chart-3: oklch(0.75 0.15 74);            /* gold */
+  --chart-4: oklch(0.65 0.18 25);
+  --chart-5: oklch(0.6 0.15 200);
+
+  --sidebar: oklch(0.992 0.003 260);
+  --sidebar-foreground: oklch(0.3 0.04 260);
+  --sidebar-primary: oklch(0.36 0.135 261);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.95 0.02 261);
+  --sidebar-accent-foreground: oklch(0.35 0.16 261);
+  --sidebar-border: oklch(0.92 0.01 260);
+  --sidebar-ring: oklch(0.36 0.135 261);
+}
+
+.dark {
+  --background: oklch(0.16 0.02 260);
+  --foreground: oklch(0.96 0.005 260);
+
+  --card: oklch(0.21 0.025 260);
+  --card-foreground: oklch(0.96 0.005 260);
+
+  --popover: oklch(0.21 0.025 260);
+  --popover-foreground: oklch(0.96 0.005 260);
+
+  --primary: oklch(0.62 0.135 261);         /* brand navy, lightened for dark UI */
+  --primary-foreground: oklch(0.16 0.02 260);
+
+  --secondary: oklch(0.26 0.03 260);
+  --secondary-foreground: oklch(0.96 0.005 260);
+
+  --muted: oklch(0.26 0.03 260);
+  --muted-foreground: oklch(0.7 0.02 260);
+
+  --accent: oklch(0.32 0.08 261);
+  --accent-foreground: oklch(0.92 0.05 261);
+
+  --destructive: oklch(0.65 0.22 25);
+  --destructive-foreground: oklch(0.99 0 0);
+
+  --success: oklch(0.7 0.16 155);
+  --success-foreground: oklch(0.16 0.02 260);
+
+  --warning: oklch(0.8 0.16 74);            /* brand gold, brightened for dark UI */
+  --warning-foreground: oklch(0.16 0.02 260);
+
+  --info: oklch(0.7 0.15 235);
+  --info-foreground: oklch(0.16 0.02 260);
+
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.62 0.135 261);
+
+  --chart-1: oklch(0.62 0.135 261);         /* navy */
+  --chart-2: oklch(0.72 0.17 155);
+  --chart-3: oklch(0.8 0.16 74);            /* gold */
+  --chart-4: oklch(0.7 0.2 25);
+  --chart-5: oklch(0.68 0.15 200);
+
+  --sidebar: oklch(0.19 0.025 260);
+  --sidebar-foreground: oklch(0.85 0.01 260);
+  --sidebar-primary: oklch(0.62 0.135 261);
+  --sidebar-primary-foreground: oklch(0.16 0.02 260);
+  --sidebar-accent: oklch(0.3 0.09 261);
+  --sidebar-accent-foreground: oklch(0.92 0.05 261);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.62 0.135 261);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html, body {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv11", "ss01", "ss03";
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+  }
+}
+
+/* Horizontally scrollable strips (tab bars, filter chips, etc.) that should
+   never force the page itself to scroll — content slides within its own
+   bounded box instead. Scrollbar hidden but the element stays scrollable
+   (touch drag, trackpad swipe, shift+wheel) on every browser. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility glass {
+  background: color-mix(in oklab, var(--background) 70%, transparent);
+  backdrop-filter: saturate(180%) blur(14px);
+  border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+}
+
+@utility shadow-soft {
+  box-shadow: var(--shadow-soft);
+}
+@utility shadow-elevated {
+  box-shadow: var(--shadow-elevated);
+}
+@utility shadow-glow {
+  box-shadow: var(--shadow-glow);
+}
+
+@utility gradient-brand {
+  background-image: linear-gradient(135deg, oklch(0.32 0.13 261), oklch(0.46 0.13 250));
+}
+@utility text-gradient-brand {
+  background-image: linear-gradient(135deg, oklch(0.32 0.13 261), oklch(0.46 0.13 250));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+/* Accent variant of the brand gradient, using the logo's gold — reserved for
+   moments that want the second brand color to lead (rare, high-impact use:
+   a hero banner or a single standout CTA), not the default button/badge tint. */
+@utility gradient-brand-gold {
+  background-image: linear-gradient(135deg, oklch(0.36 0.135 261), oklch(0.7 0.16 90));
+}
+
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+@keyframes kenburns {
+  0%   { transform: scale(1)    translate(0, 0); }
+  100% { transform: scale(1.08) translate(-1.5%, -1%); }
+}
+
+@keyframes slide-progress {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+@utility animate-kenburns {
+  animation: kenburns 5.5s ease-in-out forwards;
+}
+
+@utility animate-slide-progress {
+  animation: slide-progress 5s linear forwards;
+}
+
+@keyframes scan-line {
+  0%   { top: 2%; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { top: 98%; opacity: 0; }
+}
+
+@utility animate-scan-line {
+  animation: scan-line 2.2s ease-in-out infinite;
+}

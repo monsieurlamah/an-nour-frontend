@@ -1,0 +1,25 @@
+{
+  "name": "AN-NOUR — Commerce OS",
+  "short_name": "AN-NOUR",
+  "description": "Plateforme premium de gestion multi-boutiques : caisse, stock, créances et achats.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0F172A",
+  "theme_color": "#6366F1",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
