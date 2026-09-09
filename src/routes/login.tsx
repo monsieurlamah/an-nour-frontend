@@ -10,17 +10,21 @@ import {
   ShieldCheck,
   Globe,
   Check,
-  Eye,
-  EyeOff,
   Lock,
   ArrowRight,
-  X,
   Mail,
   User,
   Phone,
   Loader2,
 } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import {
+  PasswordInput,
+  PasswordChecklist,
+  PasswordStrengthMeter,
+  PasswordMatchHint,
+} from "@/components/auth/password";
+import { passwordIsStrong } from "@/components/auth/password-rules";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -271,8 +275,8 @@ export function AuthLayout({
                   {eyebrow}
                 </div>
               )}
-              <h1 className="text-2xl font-semibold tracking-tight sm:text-[28px]">{title}</h1>
-              {subtitle && <p className="mt-2 text-sm text-muted-foreground">{subtitle}</p>}
+              <h1 className="text-pretty text-[26px] font-semibold leading-tight tracking-tight">{title}</h1>
+              {subtitle && <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{subtitle}</p>}
               <div className="mt-7">{children}</div>
             </div>
 
@@ -289,8 +293,6 @@ export function AuthLayout({
 function LoginPage() {
   const { t } = useT();
   const navigate = useNavigate();
-  const [showPwd, setShowPwd] = useState(false);
-  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
 
   const [firstname, setFirstname] = useState("");
@@ -352,15 +354,7 @@ function LoginPage() {
 
   const loading = loginMutation.isPending || registerMutation.isPending;
 
-  const pwdRules = [
-    { key: "auth.pwdReqLength", ok: password.length >= 8 },
-    { key: "auth.pwdReqLower", ok: /[a-z]/.test(password) },
-    { key: "auth.pwdReqUpper", ok: /[A-Z]/.test(password) },
-    { key: "auth.pwdReqDigit", ok: /[0-9]/.test(password) },
-    { key: "auth.pwdReqSymbol", ok: /[^A-Za-z0-9]/.test(password) },
-  ];
-  const passwordStrong = pwdRules.every((r) => r.ok) && !/\s/.test(password);
-
+  const passwordStrong = passwordIsStrong(password);
   const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword;
   const passwordsMismatch = confirmPassword.length > 0 && password !== confirmPassword;
 
@@ -472,95 +466,32 @@ function LoginPage() {
               </Link>
             )}
           </div>
-          <div className="relative">
-            <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              id="password"
-              type={showPwd ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              autoComplete={isSignup ? "new-password" : "current-password"}
-              minLength={isSignup ? 8 : undefined}
-              required
-              className="h-11 pl-9 pr-10"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPwd((v) => !v)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-              aria-label="toggle password"
-            >
-              {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
-          {isSignup && password.length > 0 && (
-            <ul className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">
-              {pwdRules.map((r) => (
-                <li
-                  key={r.key}
-                  className={cn(
-                    "flex items-center gap-1.5 text-[11px] transition-colors",
-                    r.ok ? "text-success" : "text-muted-foreground",
-                  )}
-                >
-                  {r.ok ? (
-                    <Check className="h-3 w-3 shrink-0" />
-                  ) : (
-                    <X className="h-3 w-3 shrink-0 opacity-40" />
-                  )}
-                  {t(r.key) as string}
-                </li>
-              ))}
-            </ul>
+          <PasswordInput
+            id="password"
+            value={password}
+            onChange={setPassword}
+            autoComplete={isSignup ? "new-password" : "current-password"}
+          />
+          {isSignup && (
+            <>
+              <PasswordStrengthMeter password={password} />
+              <PasswordChecklist password={password} />
+            </>
           )}
         </div>
 
         {isSignup && (
           <div className="space-y-1.5">
             <Label htmlFor="confirmPassword">{t("auth.confirmPassword") as string}</Label>
-            <div className="relative">
-              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="confirmPassword"
-                type={showConfirmPwd ? "text" : "password"}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-                autoComplete="new-password"
-                required
-                className={cn(
-                  "h-11 pl-9 pr-10 transition-colors",
-                  passwordsMatch && "border-success ring-1 ring-success/30",
-                  passwordsMismatch && "border-destructive ring-1 ring-destructive/30",
-                )}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPwd((v) => !v)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                aria-label="toggle confirm password"
-              >
-                {showConfirmPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            {confirmPassword.length > 0 && (
-              <p
-                className={cn(
-                  "flex items-center gap-1.5 text-[11px] transition-colors",
-                  passwordsMatch ? "text-success" : "text-destructive",
-                )}
-              >
-                {passwordsMatch ? (
-                  <Check className="h-3 w-3 shrink-0" />
-                ) : (
-                  <X className="h-3 w-3 shrink-0" />
-                )}
-                {passwordsMatch
-                  ? (t("auth.pwdMatch") as string)
-                  : (t("auth.pwdMismatch") as string)}
-              </p>
-            )}
+            <PasswordInput
+              id="confirmPassword"
+              value={confirmPassword}
+              onChange={setConfirmPassword}
+              autoComplete="new-password"
+              valid={passwordsMatch}
+              invalid={passwordsMismatch}
+            />
+            <PasswordMatchHint password={password} confirm={confirmPassword} />
           </div>
         )}
 
@@ -631,7 +562,12 @@ function LoginPage() {
         </div>
 
         {/* Google — seule option sociale */}
-        <Button type="button" variant="outline" className="h-11 w-full gap-2.5 font-medium">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 w-full gap-2.5 font-medium"
+          onClick={() => toast.info(t("auth.googleSoon") as string)}
+        >
           <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />

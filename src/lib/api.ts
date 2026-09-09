@@ -459,7 +459,7 @@ export const usersApi = {
   sendCredentials: (userId: number) =>
     apiRequest<void>(`/users/${userId}/send-credentials`, { method: "POST" }),
 
-  changeMyPassword: (body: { current_password: string; new_password: string }) =>
+  changeMyPassword: (body: { current_password?: string; new_password: string }) =>
     apiRequest<void>("/users/me/change-password", { method: "POST", body }),
 };
 

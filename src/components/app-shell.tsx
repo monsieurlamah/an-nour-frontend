@@ -557,10 +557,11 @@ function ProfileMenu() {
   // Coerced workspace (useWorkContext), not the raw persisted one — a
   // store-scoped user must never see "HQ" here just because localStorage
   // still holds a stale/leftover "hq" value from a previous session.
-  const { workspace, has } = useWorkContext();
+  const { workspace, has, isUnassigned } = useWorkContext();
   const { user, logout } = useAuth();
-  const ctx =
-    workspace.kind === "hq"
+  const ctx = isUnassigned
+    ? (t("workspace.banner.unassigned") as string)
+    : workspace.kind === "hq"
       ? "HQ"
       : workspace.kind === "store"
         ? (t("workspace.banner.store") as string)

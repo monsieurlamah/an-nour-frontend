@@ -1,15 +1,21 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthLayout } from "./login";
 import { useT } from "@/lib/i18n";
 import { resetPassword } from "@/lib/auth";
 import { ApiError } from "@/lib/api-client";
+import {
+  PasswordInput,
+  PasswordChecklist,
+  PasswordStrengthMeter,
+  PasswordMatchHint,
+} from "@/components/auth/password";
+import { passwordIsStrong } from "@/components/auth/password-rules";
 
 export const Route = createFileRoute("/reset-password")({
   validateSearch: (search: Record<string, unknown>): { token: string } => ({
@@ -25,6 +31,10 @@ function Page() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
 
+  const strong = passwordIsStrong(password);
+  const match = confirm.length > 0 && password === confirm;
+  const mismatch = confirm.length > 0 && password !== confirm;
+
   const resetMutation = useMutation({
     mutationFn: () => resetPassword(token, password),
     onSuccess: () => {
@@ -32,15 +42,18 @@ function Page() {
       navigate({ to: "/login" });
     },
     onError: (err) => {
-      const message = err instanceof ApiError ? err.detail : "Erreur lors de la réinitialisation.";
-      toast.error(message);
+      toast.error(err instanceof ApiError ? err.detail : "Erreur lors de la réinitialisation.");
     },
   });
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!strong) {
+      toast.error(t("auth.pwdWeak") as string);
+      return;
+    }
     if (password !== confirm) {
-      toast.error("Les deux mots de passe ne correspondent pas.");
+      toast.error(t("auth.pwdMismatch") as string);
       return;
     }
     resetMutation.mutate();
@@ -48,13 +61,16 @@ function Page() {
 
   if (!token) {
     return (
-      <AuthLayout title={t("auth.resetTitle") as string} subtitle={t("auth.resetSubtitle") as string}>
+      <AuthLayout
+        title={t("auth.resetTitle") as string}
+        subtitle={t("auth.resetSubtitle") as string}
+      >
         <div className="space-y-4">
           <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
-            Ce lien de réinitialisation est invalide. Merci d'en demander un nouveau.
+            Ce lien de réinitialisation est invalide ou a expiré. Merci d'en demander un nouveau.
           </div>
-          <Button asChild variant="outline" className="w-full">
-            <a href="/forgot-password">{t("auth.forgotCta") as string}</a>
+          <Button asChild variant="outline" className="h-11 w-full">
+            <Link to="/forgot-password">{t("auth.forgotCta") as string}</Link>
           </Button>
         </div>
       </AuthLayout>
@@ -62,32 +78,55 @@ function Page() {
   }
 
   return (
-    <AuthLayout title={t("auth.resetTitle") as string} subtitle={t("auth.resetSubtitle") as string}>
-      <form onSubmit={submit} className="space-y-4">
+    <AuthLayout
+      eyebrow={t("auth.resetTitle") as string}
+      title={t("auth.newPassword") as string}
+      subtitle={t("auth.resetSubtitle") as string}
+    >
+      <form onSubmit={submit} className="space-y-5">
         <div className="space-y-1.5">
           <Label htmlFor="p1">{t("auth.newPassword") as string}</Label>
-          <Input
+          <PasswordInput
             id="p1"
-            type="password"
-            required
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={setPassword}
+            autoComplete="new-password"
           />
+          <PasswordStrengthMeter password={password} />
+          <PasswordChecklist password={password} />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="p2">{t("auth.confirmPassword") as string}</Label>
-          <Input
+          <PasswordInput
             id="p2"
-            type="password"
-            required
             value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
+            onChange={setConfirm}
+            autoComplete="new-password"
+            valid={match}
+            invalid={mismatch}
           />
+          <PasswordMatchHint password={password} confirm={confirm} />
         </div>
-        <Button type="submit" className="h-10 w-full" disabled={resetMutation.isPending}>
-          {resetMutation.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-          {t("auth.resetCta") as string}
+        <Button
+          type="submit"
+          className="h-11 w-full gap-2 font-semibold"
+          disabled={resetMutation.isPending || !strong || mismatch || confirm.length === 0}
+        >
+          {resetMutation.isPending ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" /> {t("common.loading") as string}
+            </>
+          ) : (
+            <>
+              <ShieldCheck className="h-4 w-4" /> {t("auth.resetCta") as string}
+            </>
+          )}
         </Button>
+        <p className="text-center text-xs text-muted-foreground">
+          <Link to="/login" className="font-medium text-primary hover:underline">
+            {t("auth.backToLogin") as string}
+          </Link>
+        </p>
       </form>
     </AuthLayout>
   );

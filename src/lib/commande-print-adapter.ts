@@ -4,6 +4,13 @@
 
 import type { CommandeRead, CommandeLigneRead, StoreRead } from "@/lib/types";
 import type { DocumentPrintData, PrintOrganization, PrintCustomer } from "@/lib/print-engine";
+import { COMMANDE_DOCUMENT_FOOTER } from "@/lib/print-engine/constants";
+
+// Every commande document (bon de commande / facture proforma / facture /
+// bon de livraison) closes on the same fixed identity footer — see
+// COMMANDE_DOCUMENT_FOOTER. The disclaimer that used to live in that slot
+// moves to `notes`, rendered as a small caption near the title instead.
+const INTERNAL_DISCLAIMER = "Document interne de réapprovisionnement — sans valeur fiscale.";
 
 function ligneName(ligne: CommandeLigneRead, productName?: (id: number) => string): string {
   if (ligne.produit_id != null) return productName?.(ligne.produit_id) ?? `Produit #${ligne.produit_id}`;
@@ -49,9 +56,9 @@ export function commandeToDemandeDocument(
     payments: [],
     amountPaid: 0,
     amountDue: 0,
-    notes: "Demande d'approvisionnement interne — à valider par la Direction Générale (Siège).",
+    notes: INTERNAL_DISCLAIMER,
     qrContent: commande.numero ?? undefined,
-    footerOverride: "Document interne de réapprovisionnement — sans valeur fiscale.",
+    footerOverride: COMMANDE_DOCUMENT_FOOTER,
   };
 }
 
@@ -102,9 +109,9 @@ export function commandeToProformaDocument(
     payments: [],
     amountPaid: 0,
     amountDue: Number(commande.montant_ttc),
-    notes: "Facture proforma interne — réapprovisionnement boutique.",
+    notes: INTERNAL_DISCLAIMER,
     qrContent: commande.numero_proforma ?? undefined,
-    footerOverride: "Document interne de réapprovisionnement — sans valeur fiscale.",
+    footerOverride: COMMANDE_DOCUMENT_FOOTER,
   };
 }
 
@@ -157,9 +164,9 @@ export function commandeToFactureDocument(
     payments: [],
     amountPaid: 0,
     amountDue: Number(commande.montant_ttc),
-    notes: "Facture interne — réapprovisionnement boutique.",
+    notes: INTERNAL_DISCLAIMER,
     qrContent: commande.numero_facture ?? undefined,
-    footerOverride: "Document interne de réapprovisionnement — sans valeur fiscale.",
+    footerOverride: COMMANDE_DOCUMENT_FOOTER,
   };
 }
 
@@ -207,8 +214,9 @@ export function commandeToBonLivraisonDocument(
     payments: [],
     amountPaid: 0,
     amountDue: 0,
+    notes: INTERNAL_DISCLAIMER,
     qrContent: livraison?.qr_content ?? livraison?.numero_bon_livraison ?? undefined,
-    footerOverride: "Document interne de réapprovisionnement — sans valeur fiscale.",
+    footerOverride: COMMANDE_DOCUMENT_FOOTER,
     logistics: livraison
       ? {
           transporteur: livraison.transporteur ?? undefined,

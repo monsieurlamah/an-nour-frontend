@@ -79,6 +79,11 @@ export type WorkContext = {
   store: StoreRead | null;
   authorizedStores: StoreRead[];
   storesLoading: boolean;
+  /** A store-scoped user (not HQ-capable) who is not linked to any boutique
+   * yet. Their `workspace` is coerced to "hq" as a harmless placeholder, but
+   * they can't actually load any store-scoped data — pages should show a
+   * "no boutique assigned" state rather than firing requests that 403. */
+  isUnassigned: boolean;
 
   cashSession: null; // not wired yet — see docs/SALES_TRANSACTION_ENGINE.md "Caisse"
   company: null; // not wired yet — single company profile lives in backend Settings,
@@ -124,6 +129,8 @@ export function useWorkContext(): WorkContext {
       ? authorizedStores.find((s) => String(s.id) === workspace.id) ?? null
       : null;
 
+  const isUnassigned = !canView && !storesLoading && authorizedStores.length === 0;
+
   return {
     user,
     permissions,
@@ -135,6 +142,7 @@ export function useWorkContext(): WorkContext {
     store,
     authorizedStores,
     storesLoading,
+    isUnassigned,
     cashSession: null,
     company: null,
     currency,

@@ -13,7 +13,7 @@ import { useWorkContext, canViewHQ } from "@/lib/work-context";
 import { useT } from "@/lib/i18n";
 
 export function WorkspaceSwitcher() {
-  const { workspace, setWorkspace, store, authorizedStores, storesLoading, isSuperAdmin, has } =
+  const { workspace, setWorkspace, store, authorizedStores, storesLoading, isSuperAdmin, has, isUnassigned } =
     useWorkContext();
   // Same rule as useAuthorizedStores() — a store-scoped user (e.g.
   // gérant-boutique) never gets an HQ workspace option, only their own store(s).
@@ -23,7 +23,9 @@ export function WorkspaceSwitcher() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
-  const label = getWorkspaceLabel(workspace, { store });
+  const label = isUnassigned
+    ? { title: t("workspace.banner.unassigned") as string, subtitle: t("workspace.unassignedHint") as string }
+    : getWorkspaceLabel(workspace, { store });
 
   const filteredStores = useMemo(() => {
     const q = query.trim().toLowerCase();

@@ -2,7 +2,6 @@
   "app.name": "AN-NOUR",
   "app.tagline": "Commerce OS",
   "app.description": "Premium platform for multi-store retail: POS, inventory, debts and procurement.",
-
   "common.search": "Search products, orders, customers…",
   "common.searchShort": "Search…",
   "common.language": "Language",
@@ -78,7 +77,6 @@
   "common.signUp": "Create account",
   "common.copy": "Copy",
   "common.copied": "Copied!",
-
   "nav.overview": "Overview",
   "nav.dashboard": "Dashboard",
   "nav.reports": "Reports & Analytics",
@@ -104,7 +102,6 @@
   "nav.home": "Home",
   "nav.orders": "Orders",
   "nav.alerts": "Alerts",
-
   "status.active": "Active",
   "status.inactive": "Inactive",
   "status.draft": "Draft",
@@ -136,20 +133,25 @@
   "status.failed": "Failed",
   "status.expiring": "Expiring",
   "status.expired": "Expired",
-
   "role.boss": "Super Admin",
   "role.manager": "Manager",
   "role.cashier": "Cashier",
-
   "payment.cash": "Cash",
   "payment.mobile": "Mobile Money",
   "payment.credit": "Credit",
   "payment.card": "Card",
-
-  "month.jan": "Jan", "month.feb": "Feb", "month.mar": "Mar", "month.apr": "Apr",
-  "month.may": "May", "month.jun": "Jun", "month.jul": "Jul", "month.aug": "Aug",
-  "month.sep": "Sep", "month.oct": "Oct", "month.nov": "Nov", "month.dec": "Dec",
-
+  "month.jan": "Jan",
+  "month.feb": "Feb",
+  "month.mar": "Mar",
+  "month.apr": "Apr",
+  "month.may": "May",
+  "month.jun": "Jun",
+  "month.jul": "Jul",
+  "month.aug": "Aug",
+  "month.sep": "Sep",
+  "month.oct": "Oct",
+  "month.nov": "Nov",
+  "month.dec": "Dec",
   "time.now": "Just now",
   "time.minAgo_one": "{{count}} min ago",
   "time.minAgo_other": "{{count}} min ago",
@@ -157,9 +159,7 @@
   "time.hAgo_other": "{{count}} h ago",
   "time.dAgo_one": "{{count}} d ago",
   "time.dAgo_other": "{{count}} d ago",
-
   "walkin": "Walk-in",
-
   "auth.welcome": "Welcome to AN-NOUR",
   "auth.subtitle": "Sign in to your executive dashboard.",
   "auth.email": "Email address",
@@ -202,7 +202,6 @@
   "auth.kpiStores": "Stores",
   "auth.kpiUptime": "Uptime",
   "auth.testimonial": "AN-NOUR transformed how I run my 12 stores. Inventory, sales, receivables: everything is finally under control, in real time.",
-
   "auth.forgotTitle": "Reset your password",
   "auth.forgotSubtitle": "Enter your email and we'll send you a reset link.",
   "auth.forgotCta": "Send reset link",
@@ -235,10 +234,10 @@
   "auth.loginError": "Incorrect email or password.",
   "auth.genericError": "Something went wrong. Please try again.",
   "auth.continueWithGoogle": "Continue with Google",
+  "auth.googleSoon": "Google sign-in is coming soon.",
   "auth.signingIn": "Signing in…",
   "auth.creatingAccount": "Creating…",
   "auth.verifying": "Verifying…",
-
   "setup.title": "Set up your workspace",
   "setup.subtitle": "A few details and your Commerce OS is ready.",
   "setup.companyName": "Company name",
@@ -252,7 +251,6 @@
   "setup.finish": "Finish setup",
   "setup.step": "Step {{n}} of {{total}}",
   "setup.welcomeUser": "Welcome: let's build your AN-NOUR workspace",
-
   "landing.signIn": "Sign in",
   "landing.openApp": "Open app",
   "landing.heroTitle": "The premium operating system for your retail business.",
@@ -262,7 +260,6 @@
   "landing.feature2": "Multi-store POS",
   "landing.feature3": "Stock & procurement",
   "landing.feature4": "Customer receivables",
-
   "dashboard.title": "Welcome back,",
   "dashboard.subtitle": "Here's the consolidated performance of your network today.",
   "dashboard.kpi.revenueDay": "Daily revenue",
@@ -315,7 +312,9 @@
   "dashboard.recentOrders": "Recent orders",
   "dashboard.alerts": "Alerts & actions",
   "dashboard.allClear": "All quiet. Have a great day.",
-
+  "dashboard.unassigned.subtitle": "Access pending setup",
+  "dashboard.unassigned.title": "You are not assigned to any store",
+  "dashboard.unassigned.body": "Your account is not linked to any store. Ask an administrator to assign you to one (Stores → Manager, or Users & Roles) to access your dashboard and operations.",
   "pos.title": "Point of Sale",
   "pos.subtitle": "Fast multi-tender checkout",
   "pos.searchProduct": "Search product, scan barcode…",
@@ -429,7 +428,6 @@
   "pos.cameraAddedToCart": "{{count}} product(s) added to cart",
   "common.close": "Close",
   "common.clear": "Clear",
-
   "sales.title": "Sales",
   "sales.subtitle": "Network transaction history",
   "sales.col.reference": "Reference",
@@ -470,7 +468,6 @@
   "sales.perPage": "per page",
   "sales.showing": "{{from}}–{{to}} of {{total}}",
   "status.voided": "Voided",
-
   "orders.title": "Procurement",
   "orders.subtitle": "Purchase requests and inter-store orders",
   "orders.new": "New order",
@@ -495,7 +492,6 @@
   "orders.approve": "Approve",
   "orders.reject": "Reject",
   "orders.markDelivered": "Mark delivered",
-
   "products.title": "Products",
   "products.subtitle": "Central catalog · prices, stock and categories",
   "products.new": "New product",
@@ -511,7 +507,6 @@
   "products.detail.purchase": "Purchase price",
   "products.detail.margin": "Margin",
   "products.detail.reorder": "Reorder level",
-
   "inventory.title": "Central inventory",
   "inventory.subtitle": "Unified stock view across stores",
   "inventory.movements": "Movements",
@@ -536,7 +531,6 @@
   "inventory.adjust.subtitle": "Physical inventory corrections",
   "inventory.reports.title": "Inventory reports",
   "inventory.reports.subtitle": "Turnover, valuation and stockouts",
-
   "stores.title": "Stores",
   "stores.subtitle": "Manage your retail network",
   "stores.new": "New store",
@@ -552,7 +546,6 @@
   "stores.detail.kpiStaff": "Staff",
   "stores.new.title": "Create store",
   "stores.new.subtitle": "Open a new point of sale",
-
   "users.title": "Users & Roles",
   "users.subtitle": "Team members and permissions",
   "users.invite": "Invite user",
@@ -565,7 +558,6 @@
   "users.perm.title": "Permissions by role",
   "users.perm.subtitle": "Define precisely what each role can do",
   "users.perm.module": "Module",
-
   "customers.title": "Customers",
   "customers.subtitle": "Customer base and loyalty balance",
   "customers.new": "New customer",
@@ -598,7 +590,6 @@
   "customers.deleted": "Customer deleted",
   "customers.delete.title": "Delete this customer?",
   "customers.delete.description": "This action cannot be undone.",
-
   "debts.title": "Receivables",
   "debts.subtitle": "Outstanding balances and collection",
   "debts.col.customer": "Customer",
@@ -609,14 +600,12 @@
   "debts.col.due": "Due",
   "debts.col.status": "Status",
   "debts.recordPayment": "Record payment",
-
   "notifications.title": "Notifications",
   "notifications.subtitle": "Stay informed about what matters",
   "notifications.markAll": "Mark all as read",
   "notifications.unreadCount_one": "{{count}} unread",
   "notifications.unreadCount_other": "{{count}} unread",
   "notifications.empty": "You're all caught up",
-
   "notif.lowStock.title": "Low stock: {{product}}",
   "notif.lowStock.body": "{{store}} is below reorder level ({{units}} units left).",
   "notif.orderApproved.title": "Order {{ref}} approved",
@@ -629,14 +618,12 @@
   "notif.outOfStock.body": "{{store}} has 0 units. Action required.",
   "notif.backup.title": "System backup completed",
   "notif.backup.body": "Nightly snapshot completed successfully.",
-
   "reports.title": "Reports & Analytics",
   "reports.subtitle": "Deep views into network performance",
   "reports.tab.revenue": "Revenue",
   "reports.tab.inventory": "Inventory",
   "reports.tab.customers": "Customers",
   "reports.tab.debts": "Receivables",
-
   "settings.title": "Settings",
   "settings.subtitle": "Configure your AN-NOUR workspace",
   "settings.sec.general": "General",
@@ -654,27 +641,22 @@
   "settings.themeAuto": "Auto",
   "settings.2fa": "Two-factor authentication",
   "settings.2faHint": "Strengthen the security of your account",
-
   "profile.title": "My profile",
   "profile.subtitle": "Personal information and preferences",
   "profile.personal": "Personal information",
   "profile.security": "Security",
   "profile.changePassword": "Change password",
   "profile.currentPassword": "Current password",
-
   "help.title": "Help Center",
   "help.subtitle": "Documentation, guides and support contact",
   "help.search": "Search the documentation…",
   "help.popular": "Popular articles",
   "help.contact": "Contact support",
   "help.contactHint": "Our team responds within 2 hours on business days.",
-
   "empty.noResults": "No results",
   "empty.noResultsHint": "Try a different search or adjust your filters.",
-
   "nav.suppliers": "Suppliers",
   "nav.purchasing": "Purchasing",
-
   "suppliers.title": "Suppliers",
   "suppliers.subtitle": "Manage your supply network and master agreements",
   "suppliers.new": "New supplier",
@@ -766,7 +748,6 @@
   "suppliers.purchase.status.partiellement_recue": "Partially received",
   "suppliers.purchase.status.recue": "Received",
   "suppliers.purchase.status.annulee": "Cancelled",
-
   "stores.detail.tab.transfers": "Transfers",
   "stores.detail.tab.performance": "Performance",
   "stores.detail.tab.settings": "Settings",
@@ -780,7 +761,6 @@
   "stores.detail.settings.payment": "Accepted payment methods",
   "stores.detail.settings.printer": "Receipt printer",
   "stores.detail.settings.tax": "VAT rate",
-
   "workspace.switch": "Switch workspace",
   "workspace.exit": "Back to HQ",
   "workspace.hq": "Headquarters",
@@ -798,6 +778,8 @@
   "workspace.pickStoreForSupplier": "Pick the store to view",
   "workspace.banner.store": "Store workspace",
   "workspace.banner.supplier": "Supplier workspace",
+  "workspace.banner.unassigned": "Unassigned",
+  "workspace.unassignedHint": "No store linked",
   "workspace.nav.storeArea": "Store workspace",
   "workspace.nav.supplierArea": "Supplier workspace",
   "workspace.nav.overview": "Overview",
@@ -809,7 +791,6 @@
   "workspace.nav.performance": "Performance",
   "workspace.nav.contacts": "Contacts",
   "workspace.nav.stores": "Stores",
-
   "supplierStores.title": "Served stores",
   "supplierStores.subtitle": "Manage stores served by {{name}}",
   "supplierStores.request": "Link a store",
@@ -822,11 +803,12 @@
   "supplierStores.pickPlaceholder": "Pick a store…",
   "supplierStores.contactLabel": "Contact person (optional)",
   "supplierStores.bannerNoStores": "You're not linked to any store. Request access to activate your workspace.",
-
   "dashboard.contextScope": "Filtered to your context",
   "dashboard.goToWorkspace": "Open my workspace",
   "common.view": "View",
-  "common.remove": "Remove"
+  "common.remove": "Remove",
+  "auth.pwdStrength.weak": "weak",
+  "auth.pwdStrength.fair": "fair",
+  "auth.pwdStrength.good": "good",
+  "auth.pwdStrength.strong": "strong"
 }
-
-

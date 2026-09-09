@@ -22,6 +22,7 @@ import {
 } from "recharts";
 import { fmtXAF, fmtCompactCur } from "@/lib/mock-data";
 import { dashboardApi } from "@/lib/api";
+import { ApiError } from "@/lib/api-client";
 import { useT } from "@/lib/i18n";
 import { useWorkContext, canViewHQ } from "@/lib/work-context";
 import { cn } from "@/lib/utils";
@@ -104,7 +105,8 @@ const ACTIVITY_ICONS: Record<string, React.ElementType> = {
 
 function Dashboard() {
   const { t } = useT();
-  const { workspace, store, isSuperAdmin, has, authorizedStores, storesLoading } = useWorkContext();
+  const { workspace, store, isSuperAdmin, has, authorizedStores, storesLoading, isUnassigned } =
+    useWorkContext();
   const isHQCapable = canViewHQ(isSuperAdmin, has);
 
   // Boss-only: browse any boutique's dashboard without switching the whole
@@ -154,6 +156,9 @@ function Dashboard() {
     queryFn: () => dashboardApi.getStats(boutiqueId, { date_from: dateFrom, date_to: dateTo }),
     refetchInterval: 5 * 60 * 1000, // auto-refresh every 5 min
     staleTime: 60 * 1000,
+    // A store-scoped user with no boutique assigned can't load any stats —
+    // don't fire a request that's guaranteed to 403; show the empty state.
+    enabled: !isUnassigned,
   });
 
   const kpi = stats?.kpi;
@@ -173,6 +178,23 @@ function Dashboard() {
     if (!q) return all;
     return all.filter(a => a.reference.toLowerCase().includes(q));
   }, [stats?.activite_recente, search]);
+
+  if (isUnassigned) {
+    return (
+      <>
+        <PageHeader title="Dashboard" description={t("dashboard.unassigned.subtitle") as string} />
+        <div className="mx-auto mt-10 flex max-w-md flex-col items-center rounded-xl border bg-card p-8 text-center">
+          <div className="mb-4 grid h-12 w-12 place-items-center rounded-full bg-muted text-muted-foreground">
+            <StoreIcon className="h-6 w-6" />
+          </div>
+          <h2 className="text-base font-semibold">{t("dashboard.unassigned.title") as string}</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {t("dashboard.unassigned.body") as string}
+          </p>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -263,7 +285,12 @@ function Dashboard() {
         </div>
       ) : error ? (
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-6 text-center text-sm text-destructive">
-          Impossible de charger le tableau de bord. <Button variant="link" size="sm" onClick={() => refetch()}>Réessayer</Button>
+          <p>
+            {error instanceof ApiError && error.status === 403
+              ? error.detail
+              : "Impossible de charger le tableau de bord."}
+          </p>
+          <Button variant="link" size="sm" onClick={() => refetch()}>Réessayer</Button>
         </div>
       ) : (
         <div className="space-y-6">

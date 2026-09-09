@@ -8,29 +8,10 @@ import type { DocumentPrintData, PrintConfig } from "./types";
 import { fmtMoney, fmtDateTime, truncate } from "./formatters";
 import { generateQRDataURL } from "./qr";
 import { loadImageForPdf } from "./image";
+import { TYPE_LABEL, isCommandeDocument, isDeliveryNoteType } from "./constants";
 
 const FONT = "helvetica";
 const MONO = "courier";
-
-const TYPE_LABEL: Record<string, string> = {
-  sale_receipt: "REÇU DE VENTE",
-  invoice: "FACTURE",
-  purchase_order: "BON DE COMMANDE",
-  delivery_note: "BON DE LIVRAISON",
-  quote: "DEVIS",
-  credit_note: "AVOIR",
-  payment_receipt: "REÇU DE PAIEMENT",
-  commande_demande: "DEMANDE D'APPROVISIONNEMENT",
-  commande_proforma: "FACTURE PROFORMA",
-  commande_facture: "FACTURE",
-  commande_bon_livraison: "BON DE LIVRAISON",
-};
-
-// A delivery note is about what's being handed over, not money — shared by
-// both thermal and A4 draw functions to hide pricing/totals/payments.
-function isDeliveryNoteType(type: string): boolean {
-  return type === "delivery_note" || type === "commande_bon_livraison";
-}
 
 // ── Thermal (58 mm and 80 mm) ─────────────────────────────────────────────────
 
@@ -109,6 +90,7 @@ async function drawThermal(doc: jsPDF, data: DocumentPrintData, cfg: PrintConfig
   left(`Date: ${fmtDateTime(data.createdAt, locale)}`);
   if (data.issuer) left(`Caissier: ${data.issuer.name}`);
   if (data.customer) left(`Client: ${data.customer.name}`);
+  if (data.notes) left(data.notes, 6);
 
   sep();
 
@@ -162,18 +144,21 @@ async function drawThermal(doc: jsPDF, data: DocumentPrintData, cfg: PrintConfig
 
     sep("=");
 
-    // Payments
-    for (const p of data.payments) {
-      row(p.method, fmtMoney(p.amount, currency, locale));
-      if (p.reference) left(`  Réf: ${p.reference}`, 6);
-      if (p.change && p.change > 0) row("Monnaie rendue", fmtMoney(p.change, currency, locale));
-    }
-    row("PAYÉ", fmtMoney(data.amountPaid, currency, locale), 8, true);
-    if (data.amountDue > 0) {
-      row("RESTE (créance)", fmtMoney(data.amountDue, currency, locale), 8, true);
-    }
+    // Payments — omitted for internal commande documents (bon de commande /
+    // proforma / facture): no real payment is ever recorded against them.
+    if (!isCommandeDocument(data.type)) {
+      for (const p of data.payments) {
+        row(p.method, fmtMoney(p.amount, currency, locale));
+        if (p.reference) left(`  Réf: ${p.reference}`, 6);
+        if (p.change && p.change > 0) row("Monnaie rendue", fmtMoney(p.change, currency, locale));
+      }
+      row("PAYÉ", fmtMoney(data.amountPaid, currency, locale), 8, true);
+      if (data.amountDue > 0) {
+        row("RESTE (créance)", fmtMoney(data.amountDue, currency, locale), 8, true);
+      }
 
-    sep("=");
+      sep("=");
+    }
   }
 
   // QR Code
@@ -186,9 +171,11 @@ async function drawThermal(doc: jsPDF, data: DocumentPrintData, cfg: PrintConfig
     } catch { /* skip if QR fails */ }
   }
 
-  // Footer
-  const footer = data.footerOverride ?? cfg.footerMessage ?? "Merci pour votre achat !";
-  center(footer, 8, true);
+  // Footer — first line bold (identity), the rest smaller (contact/activities).
+  const footerLines = (data.footerOverride ?? cfg.footerMessage ?? "Merci pour votre achat !")
+    .split("\n")
+    .filter(Boolean);
+  footerLines.forEach((line, i) => center(line, i === 0 ? 8 : 6, i === 0));
   y += 2;
 }
 
@@ -248,7 +235,17 @@ async function drawA4(doc: jsPDF, data: DocumentPrintData, cfg: PrintConfig): Pr
   doc.text(`Référence: ${data.reference}`, pW - margin - 60, y);
   y += 6;
   doc.text(`Date: ${fmtDateTime(data.createdAt, locale)}`, pW - margin - 60, y);
-  y += 10;
+  y += 6;
+
+  if (data.notes) {
+    doc.setFontSize(7.5);
+    doc.setFont(FONT, "italic");
+    doc.setTextColor(148, 163, 184);
+    doc.text(data.notes, margin, y);
+    doc.setTextColor(0, 0, 0);
+    y += 6;
+  }
+  y += 4;
 
   // Customer + Issuer info boxes
   if (data.customer) {
@@ -313,10 +310,10 @@ async function drawA4(doc: jsPDF, data: DocumentPrintData, cfg: PrintConfig): Pr
       ? { 0: { cellWidth: "auto" }, 1: { halign: "center", cellWidth: 20 } }
       : {
           0: { cellWidth: "auto" },
-          1: { halign: "center", cellWidth: 15 },
-          2: { halign: "right", cellWidth: 35 },
-          3: { halign: "right", cellWidth: 25 },
-          4: { halign: "right", cellWidth: 35 },
+          1: { halign: "center", cellWidth: 13 },
+          2: { halign: "right", cellWidth: 34 },
+          3: { halign: "right", cellWidth: 20 },
+          4: { halign: "right", cellWidth: 40 },
         },
     margin: { left: margin, right: margin },
   });
@@ -345,28 +342,31 @@ async function drawA4(doc: jsPDF, data: DocumentPrintData, cfg: PrintConfig): Pr
     totRow("TOTAL", fmtMoney(t.total, currency, locale), true);
     y += 40;
 
-    // Payments
-    doc.setFontSize(10);
-    doc.setFont(FONT, "bold");
-    doc.text("Paiements", margin, y);
-    y += 6;
-    for (const p of data.payments) {
-      doc.setFontSize(9);
-      doc.setFont(FONT, "normal");
-      const txt = p.reference ? `${p.method} (${p.reference})` : p.method;
-      doc.text(txt, margin, y);
-      doc.text(fmtMoney(p.amount, currency, locale), pW - margin, y, { align: "right" });
-      y += 5;
-    }
-    if (data.amountDue > 0) {
+    // Payments — omitted for internal commande documents (bon de commande /
+    // proforma / facture): no real payment is ever recorded against them.
+    if (!isCommandeDocument(data.type)) {
+      doc.setFontSize(10);
       doc.setFont(FONT, "bold");
-      doc.setTextColor(220, 38, 38);
-      doc.text("Montant restant (créance)", margin, y);
-      doc.text(fmtMoney(data.amountDue, currency, locale), pW - margin, y, { align: "right" });
-      doc.setTextColor(0, 0, 0);
-      y += 5;
+      doc.text("Paiements", margin, y);
+      y += 6;
+      for (const p of data.payments) {
+        doc.setFontSize(9);
+        doc.setFont(FONT, "normal");
+        const txt = p.reference ? `${p.method} (${p.reference})` : p.method;
+        doc.text(txt, margin, y);
+        doc.text(fmtMoney(p.amount, currency, locale), pW - margin, y, { align: "right" });
+        y += 5;
+      }
+      if (data.amountDue > 0) {
+        doc.setFont(FONT, "bold");
+        doc.setTextColor(220, 38, 38);
+        doc.text("Montant restant (créance)", margin, y);
+        doc.text(fmtMoney(data.amountDue, currency, locale), pW - margin, y, { align: "right" });
+        doc.setTextColor(0, 0, 0);
+        y += 5;
+      }
+      y += 8;
     }
-    y += 8;
   }
 
   // QR Code
@@ -380,13 +380,24 @@ async function drawA4(doc: jsPDF, data: DocumentPrintData, cfg: PrintConfig): Pr
     } catch { /* skip */ }
   }
 
-  // Footer
-  const footer = data.footerOverride ?? cfg.footerMessage ?? "";
-  if (footer) {
-    doc.setFontSize(9);
-    doc.setFont(FONT, "italic");
-    doc.setTextColor(100, 116, 139);
-    doc.text(footer, pW / 2, y, { align: "center" });
+  // Footer — pinned near the bottom of the page like a letterhead: first
+  // line bold (identity), the rest smaller (contact/activities), separated
+  // from the body by a thin rule.
+  const footerLines = (data.footerOverride ?? cfg.footerMessage ?? "").split("\n").filter(Boolean);
+  if (footerLines.length > 0) {
+    let fy = Math.max(y, 262);
+    doc.setDrawColor(226, 232, 240);
+    doc.line(margin, fy, pW - margin, fy);
+    fy += 6;
+    footerLines.forEach((line, i) => {
+      doc.setFontSize(i === 0 ? 11 : i === 1 ? 9 : 8);
+      doc.setFont(FONT, i === 0 ? "bold" : "normal");
+      doc.setTextColor(i <= 1 ? 30 : 148, i <= 1 ? 41 : 163, i <= 1 ? 59 : 184);
+      const lines = doc.splitTextToSize(line, contentW);
+      doc.text(lines, pW / 2, fy, { align: "center" });
+      fy += 4.5 * (Array.isArray(lines) ? lines.length : 1);
+    });
+    doc.setTextColor(0, 0, 0);
   }
 }
 

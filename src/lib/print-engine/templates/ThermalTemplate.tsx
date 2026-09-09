@@ -4,23 +4,10 @@
 
 import type { DocumentPrintData, PrintConfig } from "../types";
 import { fmtMoney, fmtDateTime } from "../formatters";
+import { TYPE_LABEL, isCommandeDocument, isDeliveryNoteType } from "../constants";
 
 const SEP_THIN = "─".repeat(36);
 const SEP_THICK = "═".repeat(36);
-
-const TYPE_LABEL: Record<string, string> = {
-  sale_receipt: "REÇU DE VENTE",
-  invoice: "FACTURE",
-  purchase_order: "BON DE COMMANDE",
-  delivery_note: "BON DE LIVRAISON",
-  quote: "DEVIS",
-  credit_note: "AVOIR",
-  payment_receipt: "REÇU DE PAIEMENT",
-  commande_demande: "DEMANDE D'APPROVISIONNEMENT",
-  commande_proforma: "FACTURE PROFORMA",
-  commande_facture: "FACTURE",
-  commande_bon_livraison: "BON DE LIVRAISON",
-};
 
 function Row({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
   return (
@@ -62,7 +49,13 @@ export function ThermalTemplate({
 
   // A delivery note is about what's being handed over, not money — no unit
   // prices, no totals/payments block (that's the receipt/facture's job).
-  const isDeliveryNote = data.type === "delivery_note" || data.type === "commande_bon_livraison";
+  const isDeliveryNote = isDeliveryNoteType(data.type);
+  // An internal commande document never carries a real payment — see
+  // A4Template for the full reasoning.
+  const showPayments = !isDeliveryNote && !isCommandeDocument(data.type);
+  const footerLines = (data.footerOverride ?? config.footerMessage ?? "Merci pour votre achat !")
+    .split("\n")
+    .filter(Boolean);
 
   return (
     <div style={style} className="print-thermal">
@@ -93,6 +86,7 @@ export function ThermalTemplate({
       <div>Date: {fmtDateTime(data.createdAt, locale)}</div>
       {data.issuer && <div>Caissier: {data.issuer.name}</div>}
       {data.customer && <div>Client: <strong>{data.customer.name}</strong></div>}
+      {data.notes && <div style={small}>{data.notes}</div>}
 
       <div>{SEP_THIN}</div>
 
@@ -131,24 +125,28 @@ export function ThermalTemplate({
 
           <div>{SEP_THICK}</div>
 
-          {/* Payments */}
-          {data.payments.map((p, i) => (
-            <div key={i}>
-              <Row label={p.method} value={fmt(p.amount)} />
-              {p.reference && <div style={small}>  Réf: {p.reference}</div>}
-              {!!p.change && p.change > 0 && (
-                <Row label="Monnaie rendue" value={fmt(p.change)} />
+          {/* Payments — omitted for internal commande documents. */}
+          {showPayments && (
+            <>
+              {data.payments.map((p, i) => (
+                <div key={i}>
+                  <Row label={p.method} value={fmt(p.amount)} />
+                  {p.reference && <div style={small}>  Réf: {p.reference}</div>}
+                  {!!p.change && p.change > 0 && (
+                    <Row label="Monnaie rendue" value={fmt(p.change)} />
+                  )}
+                </div>
+              ))}
+              <Row label="PAYÉ" value={fmt(data.amountPaid)} bold />
+              {data.amountDue > 0 && (
+                <div style={{ ...success, color: "#dc2626" }}>
+                  <Row label="RESTE (créance)" value={fmt(data.amountDue)} bold />
+                </div>
               )}
-            </div>
-          ))}
-          <Row label="PAYÉ" value={fmt(data.amountPaid)} bold />
-          {data.amountDue > 0 && (
-            <div style={{ ...success, color: "#dc2626" }}>
-              <Row label="RESTE (créance)" value={fmt(data.amountDue)} bold />
-            </div>
-          )}
 
-          <div>{SEP_THICK}</div>
+              <div>{SEP_THICK}</div>
+            </>
+          )}
         </>
       )}
 
@@ -161,8 +159,10 @@ export function ThermalTemplate({
       )}
 
       {/* Footer */}
-      <div style={{ ...center, fontWeight: "bold", marginTop: "4px" }}>
-        {data.footerOverride ?? config.footerMessage ?? "Merci pour votre achat !"}
+      <div style={{ ...center, marginTop: "4px" }}>
+        {footerLines.map((line, i) => (
+          <div key={i} style={i === 0 ? bold : small}>{line}</div>
+        ))}
       </div>
     </div>
   );

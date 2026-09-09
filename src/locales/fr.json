@@ -2,7 +2,6 @@
   "app.name": "AN-NOUR",
   "app.tagline": "Commerce OS",
   "app.description": "Plateforme premium pour le commerce multi-boutiques : POS, stock, créances et approvisionnement.",
-
   "common.search": "Rechercher des produits, commandes, clients…",
   "common.searchShort": "Rechercher…",
   "common.language": "Langue",
@@ -78,7 +77,6 @@
   "common.signUp": "Créer un compte",
   "common.copy": "Copier",
   "common.copied": "Copié !",
-
   "nav.overview": "Vue d'ensemble",
   "nav.dashboard": "Tableau de bord",
   "nav.reports": "Rapports & Analyses",
@@ -104,7 +102,6 @@
   "nav.home": "Accueil",
   "nav.orders": "Commandes",
   "nav.alerts": "Alertes",
-
   "status.active": "Actif",
   "status.inactive": "Inactif",
   "status.draft": "Brouillon",
@@ -136,20 +133,25 @@
   "status.failed": "Échoué",
   "status.expiring": "Expire bientôt",
   "status.expired": "Expiré",
-
   "role.boss": "Super Admin",
   "role.manager": "Gérant",
   "role.cashier": "Caissier",
-
   "payment.cash": "Espèces",
   "payment.mobile": "Mobile Money",
   "payment.credit": "Crédit",
   "payment.card": "Carte",
-
-  "month.jan": "Jan", "month.feb": "Fév", "month.mar": "Mars", "month.apr": "Avr",
-  "month.may": "Mai", "month.jun": "Juin", "month.jul": "Juil", "month.aug": "Août",
-  "month.sep": "Sept", "month.oct": "Oct", "month.nov": "Nov", "month.dec": "Déc",
-
+  "month.jan": "Jan",
+  "month.feb": "Fév",
+  "month.mar": "Mars",
+  "month.apr": "Avr",
+  "month.may": "Mai",
+  "month.jun": "Juin",
+  "month.jul": "Juil",
+  "month.aug": "Août",
+  "month.sep": "Sept",
+  "month.oct": "Oct",
+  "month.nov": "Nov",
+  "month.dec": "Déc",
   "time.now": "À l'instant",
   "time.minAgo_one": "il y a {{count}} min",
   "time.minAgo_other": "il y a {{count}} min",
@@ -157,9 +159,7 @@
   "time.hAgo_other": "il y a {{count}} h",
   "time.dAgo_one": "il y a {{count}} j",
   "time.dAgo_other": "il y a {{count}} j",
-
   "walkin": "Client comptant",
-
   "auth.welcome": "Bienvenue sur AN-NOUR",
   "auth.subtitle": "Connectez-vous à votre tableau de bord exécutif.",
   "auth.email": "Adresse e-mail",
@@ -202,7 +202,6 @@
   "auth.kpiStores": "Boutiques",
   "auth.kpiUptime": "Disponibilité",
   "auth.testimonial": "AN-NOUR a transformé la gestion de mes 12 boutiques. Stock, ventes, créances : tout est enfin sous contrôle, en temps réel.",
-
   "auth.forgotTitle": "Réinitialiser le mot de passe",
   "auth.forgotSubtitle": "Entrez votre e-mail, nous vous envoyons un lien de réinitialisation.",
   "auth.forgotCta": "Envoyer le lien",
@@ -235,10 +234,10 @@
   "auth.loginError": "E-mail ou mot de passe incorrect.",
   "auth.genericError": "Une erreur est survenue. Réessayez.",
   "auth.continueWithGoogle": "Continuer avec Google",
+  "auth.googleSoon": "La connexion Google sera bientôt disponible.",
   "auth.signingIn": "Connexion…",
   "auth.creatingAccount": "Création…",
   "auth.verifying": "Vérification…",
-
   "setup.title": "Configurez votre espace",
   "setup.subtitle": "Quelques infos et votre Commerce OS est prêt.",
   "setup.companyName": "Nom de l'entreprise",
@@ -252,7 +251,6 @@
   "setup.finish": "Terminer la configuration",
   "setup.step": "Étape {{n}} sur {{total}}",
   "setup.welcomeUser": "Bonjour, créons votre univers AN-NOUR",
-
   "landing.signIn": "Se connecter",
   "landing.openApp": "Ouvrir l'app",
   "landing.heroTitle": "Le système d'exploitation premium pour votre commerce.",
@@ -262,7 +260,6 @@
   "landing.feature2": "POS multi-boutiques",
   "landing.feature3": "Stock & approvisionnement",
   "landing.feature4": "Créances clients",
-
   "dashboard.title": "Bonjour",
   "dashboard.subtitle": "Voici la performance consolidée de votre réseau aujourd'hui.",
   "dashboard.kpi.revenueDay": "CA du jour",
@@ -315,7 +312,9 @@
   "dashboard.recentOrders": "Commandes récentes",
   "dashboard.alerts": "Alertes & actions",
   "dashboard.allClear": "Tout est calme. Bonne journée.",
-
+  "dashboard.unassigned.subtitle": "Accès en attente de configuration",
+  "dashboard.unassigned.title": "Aucune boutique ne vous est assignée",
+  "dashboard.unassigned.body": "Votre compte n'est rattaché à aucune boutique. Demandez à un administrateur de vous rattacher à une boutique (Boutiques → Gérant, ou Utilisateurs & Rôles) pour accéder à votre tableau de bord et à vos opérations.",
   "pos.title": "Point de vente",
   "pos.subtitle": "Encaissement rapide multi-paiement",
   "pos.searchProduct": "Rechercher un produit, scanner un code-barres…",
@@ -429,7 +428,6 @@
   "pos.cameraAddedToCart": "{{count}} produit(s) ajouté(s) au panier",
   "common.close": "Fermer",
   "common.clear": "Réinitialiser",
-
   "sales.title": "Ventes",
   "sales.subtitle": "Historique des transactions du réseau",
   "sales.col.reference": "Référence",
@@ -470,7 +468,6 @@
   "sales.perPage": "par page",
   "sales.showing": "{{from}}–{{to}} sur {{total}}",
   "status.voided": "Annulée",
-
   "orders.title": "Approvisionnement",
   "orders.subtitle": "Demandes d'achat et bons de commande inter-boutiques",
   "orders.new": "Nouvelle commande",
@@ -495,7 +492,6 @@
   "orders.approve": "Approuver",
   "orders.reject": "Rejeter",
   "orders.markDelivered": "Marquer livrée",
-
   "products.title": "Produits",
   "products.subtitle": "Catalogue central · prix, stock et catégories",
   "products.new": "Nouveau produit",
@@ -511,7 +507,6 @@
   "products.detail.purchase": "Prix d'achat",
   "products.detail.margin": "Marge",
   "products.detail.reorder": "Seuil de réappro.",
-
   "inventory.title": "Stock central",
   "inventory.subtitle": "Vision unifiée des stocks par boutique",
   "inventory.movements": "Mouvements",
@@ -536,7 +531,6 @@
   "inventory.adjust.subtitle": "Corrections d'inventaire physique",
   "inventory.reports.title": "Rapports de stock",
   "inventory.reports.subtitle": "Rotations, valorisation et ruptures",
-
   "stores.title": "Boutiques",
   "stores.subtitle": "Gérez votre réseau de points de vente",
   "stores.new": "Nouvelle boutique",
@@ -552,7 +546,6 @@
   "stores.detail.kpiStaff": "Équipe",
   "stores.new.title": "Créer une boutique",
   "stores.new.subtitle": "Ouvrez un nouveau point de vente",
-
   "users.title": "Utilisateurs & Rôles",
   "users.subtitle": "Membres de l'équipe et permissions",
   "users.invite": "Inviter un utilisateur",
@@ -565,7 +558,6 @@
   "users.perm.title": "Permissions par rôle",
   "users.perm.subtitle": "Définissez précisément ce que chaque rôle peut faire",
   "users.perm.module": "Module",
-
   "customers.title": "Clients",
   "customers.subtitle": "Base de clients et solde de fidélité",
   "customers.new": "Nouveau client",
@@ -598,7 +590,6 @@
   "customers.deleted": "Client supprimé",
   "customers.delete.title": "Supprimer le client ?",
   "customers.delete.description": "Cette action est irréversible.",
-
   "debts.title": "Créances",
   "debts.subtitle": "Suivi des paiements en attente et recouvrement",
   "debts.col.customer": "Client",
@@ -609,14 +600,12 @@
   "debts.col.due": "Échéance",
   "debts.col.status": "Statut",
   "debts.recordPayment": "Enregistrer un paiement",
-
   "notifications.title": "Notifications",
   "notifications.subtitle": "Restez informé de tout ce qui compte",
   "notifications.markAll": "Tout marquer comme lu",
   "notifications.unreadCount_one": "{{count}} non lue",
   "notifications.unreadCount_other": "{{count}} non lues",
   "notifications.empty": "Vous êtes à jour",
-
   "notif.lowStock.title": "Stock bas : {{product}}",
   "notif.lowStock.body": "{{store}} est sous le seuil de réappro. ({{units}} unités restantes).",
   "notif.orderApproved.title": "Commande {{ref}} approuvée",
@@ -629,14 +618,12 @@
   "notif.outOfStock.body": "{{store}} a 0 unité. Action requise.",
   "notif.backup.title": "Sauvegarde système terminée",
   "notif.backup.body": "Le snapshot nocturne a été réalisé avec succès.",
-
   "reports.title": "Rapports & Analyses",
   "reports.subtitle": "Vues approfondies sur la performance de l'enseigne",
   "reports.tab.revenue": "Chiffre d'affaires",
   "reports.tab.inventory": "Stock",
   "reports.tab.customers": "Clients",
   "reports.tab.debts": "Créances",
-
   "settings.title": "Paramètres",
   "settings.subtitle": "Configurez votre espace AN-NOUR",
   "settings.sec.general": "Général",
@@ -654,27 +641,22 @@
   "settings.themeAuto": "Automatique",
   "settings.2fa": "Authentification à deux facteurs",
   "settings.2faHint": "Renforcez la sécurité de votre compte",
-
   "profile.title": "Mon profil",
   "profile.subtitle": "Informations personnelles et préférences",
   "profile.personal": "Informations personnelles",
   "profile.security": "Sécurité",
   "profile.changePassword": "Changer le mot de passe",
   "profile.currentPassword": "Mot de passe actuel",
-
   "help.title": "Centre d'aide",
   "help.subtitle": "Documentation, guides et contact support",
   "help.search": "Rechercher dans la documentation…",
   "help.popular": "Articles populaires",
   "help.contact": "Contacter le support",
   "help.contactHint": "Notre équipe répond en moins de 2 heures (jours ouvrés).",
-
   "empty.noResults": "Aucun résultat",
   "empty.noResultsHint": "Essayez un autre terme ou ajustez vos filtres.",
-
   "nav.suppliers": "Fournisseurs",
   "nav.purchasing": "Achats",
-
   "suppliers.title": "Fournisseurs",
   "suppliers.subtitle": "Gérez votre réseau d'approvisionnement et vos accords cadres",
   "suppliers.new": "Nouveau fournisseur",
@@ -766,7 +748,6 @@
   "suppliers.purchase.status.partiellement_recue": "Partiellement reçue",
   "suppliers.purchase.status.recue": "Reçue",
   "suppliers.purchase.status.annulee": "Annulée",
-
   "stores.detail.tab.transfers": "Transferts",
   "stores.detail.tab.performance": "Performance",
   "stores.detail.tab.settings": "Paramètres",
@@ -780,7 +761,6 @@
   "stores.detail.settings.payment": "Moyens de paiement acceptés",
   "stores.detail.settings.printer": "Imprimante caisse",
   "stores.detail.settings.tax": "Taux de TVA",
-
   "workspace.switch": "Changer d'espace de travail",
   "workspace.exit": "Revenir au siège",
   "workspace.hq": "Siège (HQ)",
@@ -798,6 +778,8 @@
   "workspace.pickStoreForSupplier": "Choisir la boutique à consulter",
   "workspace.banner.store": "Espace boutique",
   "workspace.banner.supplier": "Espace fournisseur",
+  "workspace.banner.unassigned": "Non assigné",
+  "workspace.unassignedHint": "Aucune boutique rattachée",
   "workspace.nav.storeArea": "Espace boutique",
   "workspace.nav.supplierArea": "Espace fournisseur",
   "workspace.nav.overview": "Aperçu",
@@ -809,7 +791,6 @@
   "workspace.nav.performance": "Performance",
   "workspace.nav.contacts": "Contacts",
   "workspace.nav.stores": "Boutiques",
-
   "supplierStores.title": "Boutiques fournies",
   "supplierStores.subtitle": "Gérez les boutiques desservies par {{name}}",
   "supplierStores.request": "Lier une boutique",
@@ -822,11 +803,12 @@
   "supplierStores.pickPlaceholder": "Choisir une boutique…",
   "supplierStores.contactLabel": "Personne de contact (optionnel)",
   "supplierStores.bannerNoStores": "Vous n'êtes lié à aucune boutique. Demandez l'accès pour activer votre espace.",
-
   "dashboard.contextScope": "Vue filtrée sur votre contexte",
   "dashboard.goToWorkspace": "Ouvrir mon espace",
   "common.view": "Voir",
-  "common.remove": "Retirer"
+  "common.remove": "Retirer",
+  "auth.pwdStrength.weak": "faible",
+  "auth.pwdStrength.fair": "moyen",
+  "auth.pwdStrength.good": "bon",
+  "auth.pwdStrength.strong": "excellent"
 }
-
-
