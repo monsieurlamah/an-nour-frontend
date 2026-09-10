@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { fmtXAF } from "@/lib/mock-data";
 import { useT, formatDateTime } from "@/lib/i18n";
-import { useWorkContext } from "@/lib/work-context";
+import { useWorkContext, canViewHQ } from "@/lib/work-context";
 import { commandesApi, catalogApi, storesApi, usersApi, qk } from "@/lib/api";
 import { ApiError } from "@/lib/api-client";
 import { PrintPreviewDialog, type DocumentPrintData } from "@/lib/print-engine";
@@ -69,7 +69,15 @@ function Page() {
   const { id } = useParams({ from: "/app/orders/$id" });
   const commandeId = Number(id);
   const qc = useQueryClient();
-  const { has, user, workspace } = useWorkContext();
+  const { has, user, workspace, isSuperAdmin } = useWorkContext();
+  // The proforma decision is the *boutique's own* checks-and-balances on
+  // what HQ proposed — the backend deliberately refuses it to any
+  // HQ-capable account (super-admin, stores.manage…), even one that has
+  // switched its browsing workspace to this store (see
+  // commandes/router.py::approve_proforma / _is_boutique_member). Mirror
+  // that here so the buttons are never shown to an account that's
+  // guaranteed to get a 404 from the API.
+  const isHQCapable = canViewHQ(isSuperAdmin, has);
 
   const { data: commande, isLoading, error, refetch } = useQuery({
     queryKey: qk.commandes.detail(commandeId),
@@ -462,7 +470,7 @@ function Page() {
                 </Button>
               )}
 
-              {commande.statut === "proforma_generee" && has("commandes.approve_proforma") && isActingAsThisStore && (
+              {commande.statut === "proforma_generee" && has("commandes.approve_proforma") && isActingAsThisStore && !isHQCapable && (
                 <>
                   <p className="text-xs text-muted-foreground">
                     Le Siège a soumis une facture proforma — validez-la pour générer la facture,
@@ -478,9 +486,11 @@ function Page() {
                 </>
               )}
 
-              {commande.statut === "proforma_generee" && !(has("commandes.approve_proforma") && isActingAsThisStore) && (
+              {commande.statut === "proforma_generee" && !(has("commandes.approve_proforma") && isActingAsThisStore && !isHQCapable) && (
                 <p className="rounded-md bg-info/10 p-2 text-xs text-info">
-                  En attente de la décision du gérant de la boutique sur la facture proforma.
+                  {isHQCapable
+                    ? "En attente de la décision du gérant de la boutique sur la facture proforma — le Siège ne peut pas valider sa propre proforma."
+                    : "En attente de la décision du gérant de la boutique sur la facture proforma."}
                 </p>
               )}
 
