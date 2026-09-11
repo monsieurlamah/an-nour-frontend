@@ -26,12 +26,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Search, Plus, ShieldCheck, Users, Loader2, MoreHorizontal,
-  UserCheck, UserX, Mail, Eye, Trash2, Store,
+  UserCheck, UserX, Mail, Eye, Trash2, Store, KeyRound,
 } from "lucide-react";
 import { usersApi, accessApi, storesApi, qk } from "@/lib/api";
 import { useT, formatDateTime } from "@/lib/i18n";
 import { GROUP_SLUG_LABEL as GROUP_LABEL, GROUP_SLUG_BADGE_COLOR as GROUP_COLOR } from "@/lib/auth";
 import { useWorkContext, canViewHQ } from "@/lib/work-context";
+import { SetPasswordDialog } from "@/components/users/set-password-dialog";
 import { toast } from "sonner";
 import type { UserRead, UserStatus, UserCreate, UserUpdate } from "@/lib/types";
 
@@ -65,6 +66,7 @@ function Page() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editUser, setEditUser] = useState<UserRead | null>(null);
   const [assignStoreUser, setAssignStoreUser] = useState<number | null>(null);
+  const [setPasswordUser, setSetPasswordUser] = useState<UserRead | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<UserRead | null>(null);
 
   const { data: groups = [] } = useQuery({
@@ -310,6 +312,9 @@ function Page() {
                               <Store className="mr-2 h-3.5 w-3.5" /> Affecter à une boutique
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => setSetPasswordUser(u)}>
+                              <KeyRound className="mr-2 h-3.5 w-3.5" /> Réinitialiser le mot de passe
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => sendCredsMutation.mutate(u.id)}
                               disabled={sendCredsMutation.isPending}
@@ -380,6 +385,16 @@ function Page() {
         <AssignStoreDialog
           userId={assignStoreUser}
           onClose={() => setAssignStoreUser(null)}
+        />
+      )}
+
+      {/* Set Password Dialog */}
+      {setPasswordUser !== null && (
+        <SetPasswordDialog
+          open
+          userId={setPasswordUser.id}
+          userName={`${setPasswordUser.firstname} ${setPasswordUser.lastname}`.trim()}
+          onClose={() => setSetPasswordUser(null)}
         />
       )}
 

@@ -120,10 +120,6 @@ function ChangePasswordPage() {
             </>
           )}
         </Button>
-
-        <p className="text-center text-[11px] text-muted-foreground">
-          Protégé par chiffrement TLS. Vos données restent privées.
-        </p>
       </form>
     </AuthLayout>
   );

@@ -28,6 +28,7 @@ import { usersApi, accessApi, storesApi, qk } from "@/lib/api";
 import { formatDateTime } from "@/lib/i18n";
 import { GROUP_SLUG_LABEL as GROUP_LABEL, GROUP_SLUG_BADGE_COLOR as GROUP_COLOR } from "@/lib/auth";
 import { useWorkContext } from "@/lib/work-context";
+import { SetPasswordDialog } from "@/components/users/set-password-dialog";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/users/$id")({ component: Page });
@@ -45,6 +46,7 @@ function Page() {
   const canManageStores = has("stores.manage");
   const [addGroupOpen, setAddGroupOpen] = useState(false);
   const [addStoreOpen, setAddStoreOpen] = useState(false);
+  const [setPasswordOpen, setSetPasswordOpen] = useState(false);
 
   const {
     data: user,
@@ -133,6 +135,9 @@ function Page() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setSetPasswordOpen(true)}>
+                    <KeyRound className="mr-2 h-3.5 w-3.5" /> Réinitialiser le mot de passe
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => sendCredsMutation.mutate()}
                     disabled={sendCredsMutation.isPending}
@@ -209,20 +214,31 @@ function Page() {
             </div>
 
             {canManage && (
-              <Button
-                className="mt-6 w-full"
-                size="sm"
-                variant="outline"
-                onClick={() => sendCredsMutation.mutate()}
-                disabled={sendCredsMutation.isPending}
-              >
-                {sendCredsMutation.isPending ? (
-                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                ) : (
-                  <Mail className="mr-1.5 h-4 w-4" />
-                )}
-                Envoyer les accès
-              </Button>
+              <div className="mt-6 space-y-2">
+                <Button
+                  className="w-full"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setSetPasswordOpen(true)}
+                >
+                  <KeyRound className="mr-1.5 h-4 w-4" />
+                  Réinitialiser le mot de passe
+                </Button>
+                <Button
+                  className="w-full"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => sendCredsMutation.mutate()}
+                  disabled={sendCredsMutation.isPending}
+                >
+                  {sendCredsMutation.isPending ? (
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Mail className="mr-1.5 h-4 w-4" />
+                  )}
+                  Envoyer les accès
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -361,6 +377,13 @@ function Page() {
         onClose={() => setAddStoreOpen(false)}
         userId={userId}
         allStores={allStores}
+      />
+
+      <SetPasswordDialog
+        open={setPasswordOpen}
+        onClose={() => setSetPasswordOpen(false)}
+        userId={userId}
+        userName={`${user.firstname} ${user.lastname}`.trim()}
       />
     </>
   );
