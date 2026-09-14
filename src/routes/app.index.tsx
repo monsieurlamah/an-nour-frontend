@@ -40,7 +40,15 @@ const TIP = {
   labelStyle: { color: "var(--muted-foreground)", fontSize: 11, marginBottom: 4 } as const,
 };
 
-const PIE_COLORS = ["#3b82f6", "#f97316", "#22c55e", "#a855f7", "#ef4444", "#14b8a6"];
+// Brand-anchored categorical palette (navy/green/gold/red/teal) — validated
+// with the dataviz skill's scripts/validate_palette.js (lightness band,
+// chroma floor, CVD adjacent-pair separation, contrast vs white surface all
+// clear; the borderline CVD/contrast pairs are legal because the legend
+// below always pairs each swatch with a visible label). Mirrors
+// styles.css's --chart-1..5 tokens — kept as static hex, not var(), so the
+// SVG fill/stroke always resolves regardless of how recharts sets the attr.
+const PIE_COLORS = ["#2754a5", "#0a924b", "#e58e00", "#d73240", "#00849b"];
+const BRAND_NAVY = PIE_COLORS[0];
 
 // ── Period filter ──────────────────────────────────────────────────────────
 
@@ -93,7 +101,7 @@ function Trend({ current, previous }: { current: number; previous: number }) {
 const ALERT_COLORS: Record<string, string> = {
   error: "border-destructive/30 bg-destructive/5 text-destructive",
   warning: "border-warning/30 bg-warning/5 text-warning",
-  info: "border-blue-200 bg-blue-50 text-blue-700",
+  info: "border-info/30 bg-info/10 text-info",
 };
 
 const ACTIVITY_ICONS: Record<string, React.ElementType> = {
@@ -415,15 +423,15 @@ function Dashboard() {
                     <AreaChart data={evolutionData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
                       <defs>
                         <linearGradient id="caGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15} />
-                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                          <stop offset="5%" stopColor={BRAND_NAVY} stopOpacity={0.15} />
+                          <stop offset="95%" stopColor={BRAND_NAVY} stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                       <XAxis dataKey="date" tick={{ fontSize: 10 }} tickLine={false} />
                       <YAxis tick={{ fontSize: 10 }} tickLine={false} tickFormatter={v => fmtCompactCur(v)} />
                       <Tooltip {...TIP} formatter={(v: number) => fmtXAF(v)} />
-                      <Area type="monotone" dataKey="ca" stroke="#3b82f6" strokeWidth={2} fill="url(#caGrad)" name="CA" />
+                      <Area type="monotone" dataKey="ca" stroke={BRAND_NAVY} strokeWidth={2} fill="url(#caGrad)" name="CA" />
                     </AreaChart>
                   </ResponsiveContainer>
                 )}
@@ -484,7 +492,7 @@ function Dashboard() {
                       <XAxis type="number" tick={{ fontSize: 10 }} tickLine={false} tickFormatter={v => `${v}`} />
                       <YAxis type="category" dataKey="nom" tick={{ fontSize: 10 }} tickLine={false} width={80} />
                       <Tooltip {...TIP} />
-                      <Bar dataKey="quantite" fill="#3b82f6" radius={[0, 4, 4, 0]} name="Qté vendue" />
+                      <Bar dataKey="quantite" fill={BRAND_NAVY} radius={[0, 4, 4, 0]} name="Qté vendue" />
                     </BarChart>
                   </ResponsiveContainer>
                 )}

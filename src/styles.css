@@ -105,11 +105,16 @@
   --input: oklch(0.93 0.01 260);
   --ring: oklch(0.36 0.135 261);
 
-  --chart-1: oklch(0.36 0.135 261);          /* navy */
-  --chart-2: oklch(0.65 0.16 155);
-  --chart-3: oklch(0.75 0.15 74);            /* gold */
-  --chart-4: oklch(0.65 0.18 25);
-  --chart-5: oklch(0.6 0.15 200);
+  /* Categorical chart palette — brand navy/gold anchors + 3 supporting hues,
+     re-stepped off the UI --primary/--warning tokens and passed through
+     scripts/validate_palette.js (dataviz skill): lightness band, chroma
+     floor, CVD adjacent-pair separation and contrast all clear (light
+     surface #fcfcfb). Don't hand-tune these — re-run the validator. */
+  --chart-1: oklch(0.46 0.14 261);           /* navy   #2754a5 */
+  --chart-2: oklch(0.58 0.15 152);           /* green  #0a924b */
+  --chart-3: oklch(0.72 0.16 68);            /* gold   #e58e00 */
+  --chart-4: oklch(0.58 0.20 22);            /* red    #d73240 */
+  --chart-5: oklch(0.55 0.13 210);           /* teal   #00849b */
 
   --sidebar: oklch(0.992 0.003 260);
   --sidebar-foreground: oklch(0.3 0.04 260);
@@ -159,11 +164,13 @@
   --input: oklch(1 0 0 / 12%);
   --ring: oklch(0.62 0.135 261);
 
-  --chart-1: oklch(0.62 0.135 261);         /* navy */
-  --chart-2: oklch(0.72 0.17 155);
-  --chart-3: oklch(0.8 0.16 74);            /* gold */
-  --chart-4: oklch(0.7 0.2 25);
-  --chart-5: oklch(0.68 0.15 200);
+  /* Same palette, re-stepped for the dark surface (#121824) — see the light
+     block above and scripts/validate_palette.js --mode dark. */
+  --chart-1: oklch(0.62 0.135 261);         /* navy  #5685d7 */
+  --chart-2: oklch(0.66 0.15 152);          /* green #36ac62 */
+  --chart-3: oklch(0.655 0.17 68);          /* gold  #d27700 */
+  --chart-4: oklch(0.63 0.21 10);           /* red   #ea3c6c */
+  --chart-5: oklch(0.63 0.13 210);          /* teal  #009db4 */
 
   --sidebar: oklch(0.19 0.025 260);
   --sidebar-foreground: oklch(0.85 0.01 260);
@@ -240,24 +247,6 @@
 @keyframes shimmer {
   0% { background-position: -1000px 0; }
   100% { background-position: 1000px 0; }
-}
-
-@keyframes kenburns {
-  0%   { transform: scale(1)    translate(0, 0); }
-  100% { transform: scale(1.08) translate(-1.5%, -1%); }
-}
-
-@keyframes slide-progress {
-  from { transform: scaleX(0); }
-  to   { transform: scaleX(1); }
-}
-
-@utility animate-kenburns {
-  animation: kenburns 5.5s ease-in-out forwards;
-}
-
-@utility animate-slide-progress {
-  animation: slide-progress 5s linear forwards;
 }
 
 @keyframes scan-line {

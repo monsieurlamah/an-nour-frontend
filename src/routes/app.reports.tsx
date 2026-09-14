@@ -9,16 +9,39 @@ import { KpiCard } from "@/components/primitives";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { fmtXAF } from "@/lib/mock-data";
 import { reportsApi } from "@/lib/api";
-import { FileSpreadsheet, FileText, Loader2 } from "lucide-react";
+import { FileSpreadsheet, FileText, Loader2, Clock, Truck, Ban, AlertTriangle } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { useWorkContext } from "@/lib/work-context";
 
 export const Route = createFileRoute("/app/reports")({ component: Page });
 
-const tip = { contentStyle: { background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 12, fontSize: 12 } } as const;
+const tip = {
+  contentStyle: {
+    background: "var(--popover)",
+    border: "1px solid var(--border)",
+    borderRadius: 12,
+    fontSize: 12,
+  },
+} as const;
 
 const intFmt = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
 const fmtInt = (n: number) => intFmt.format(n);
@@ -69,8 +92,13 @@ function deltaLabel(d: number | undefined): { text: string; rgb: [number, number
 // ── PDF drawing helpers (module-level: no component state needed) ──────────
 
 function drawKpiCard(
-  doc: jsPDF, x: number, y: number, w: number, h: number,
-  label: string, value: string,
+  doc: jsPDF,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  label: string,
+  value: string,
   delta: { text: string; rgb: [number, number, number] } | null,
   accent: [number, number, number],
 ) {
@@ -151,11 +179,28 @@ function Page() {
   const kpi = data?.kpi;
   // Decimal fields arrive as JSON strings (e.g. "4680000.00") — convert to
   // numbers here so recharts scales/positions them correctly.
-  const revenueTrend = (data?.revenue_trend ?? []).map(p => ({ ...p, ca: Number(p.ca), ventes: Number(p.ventes) }));
-  const stockByCategory = (data?.stock_by_category ?? []).map(c => ({ ...c, valeur: Number(c.valeur) }));
-  const collectionTrend = (data?.collection_trend ?? []).map(w => ({ ...w, collected: Number(w.collected), outstanding: Number(w.outstanding) }));
-  const storeRevenue = (data?.store_revenue ?? []).map(s => ({ ...s, ca: Number(s.ca) }));
-  const sellerRevenue = (data?.seller_revenue ?? []).map(s => ({ ...s, ventes: Number(s.ventes), ca: Number(s.ca) }));
+  const revenueTrend = (data?.revenue_trend ?? []).map((p) => ({
+    ...p,
+    ca: Number(p.ca),
+    ventes: Number(p.ventes),
+  }));
+  const stockByCategory = (data?.stock_by_category ?? []).map((c) => ({
+    ...c,
+    valeur: Number(c.valeur),
+  }));
+  const collectionTrend = (data?.collection_trend ?? []).map((w) => ({
+    ...w,
+    collected: Number(w.collected),
+    outstanding: Number(w.outstanding),
+  }));
+  const storeRevenue = (data?.store_revenue ?? []).map((s) => ({ ...s, ca: Number(s.ca) }));
+  const sellerRevenue = (data?.seller_revenue ?? []).map((s) => ({
+    ...s,
+    ventes: Number(s.ventes),
+    ca: Number(s.ca),
+  }));
+  const agedBalance = (data?.aged_balance ?? []).map((b) => ({ ...b, montant: Number(b.montant) }));
+  const supplyStats = data?.supply_stats;
 
   const margeDelta = kpi
     ? Math.round((Number(kpi.marge_pct) - Number(kpi.marge_pct_precedent)) * 10) / 10
@@ -204,22 +249,40 @@ function Page() {
     });
     resumeHead.height = 20;
 
-    const kpiRows: Array<{ label: string; value: number; prev: number | null; numFmt: string; sign: number }> = [
+    const kpiRows: Array<{
+      label: string;
+      value: number;
+      prev: number | null;
+      numFmt: string;
+      sign: number;
+    }> = [
       {
-        label: "CA du mois", value: Number(kpi.ca_mois), prev: Number(kpi.ca_mois_precedent),
-        numFmt: '#,##0" GNF"', sign: Math.sign(Number(kpi.ca_mois) - Number(kpi.ca_mois_precedent)),
+        label: "CA du mois",
+        value: Number(kpi.ca_mois),
+        prev: Number(kpi.ca_mois_precedent),
+        numFmt: '#,##0" GNF"',
+        sign: Math.sign(Number(kpi.ca_mois) - Number(kpi.ca_mois_precedent)),
       },
       {
-        label: "Ventes du mois", value: kpi.ventes_mois, prev: kpi.ventes_mois_precedent,
-        numFmt: "#,##0", sign: Math.sign(kpi.ventes_mois - kpi.ventes_mois_precedent),
+        label: "Ventes du mois",
+        value: kpi.ventes_mois,
+        prev: kpi.ventes_mois_precedent,
+        numFmt: "#,##0",
+        sign: Math.sign(kpi.ventes_mois - kpi.ventes_mois_precedent),
       },
       {
-        label: "Marge", value: Number(kpi.marge_pct), prev: Number(kpi.marge_pct_precedent),
-        numFmt: '0.0"%"', sign: Math.sign(Number(kpi.marge_pct) - Number(kpi.marge_pct_precedent)),
+        label: "Marge",
+        value: Number(kpi.marge_pct),
+        prev: Number(kpi.marge_pct_precedent),
+        numFmt: '0.0"%"',
+        sign: Math.sign(Number(kpi.marge_pct) - Number(kpi.marge_pct_precedent)),
       },
       {
-        label: "Recouvrement des créances", value: Number(kpi.recouvrement_pct), prev: null,
-        numFmt: '0.0"%"', sign: 0,
+        label: "Recouvrement des créances",
+        value: Number(kpi.recouvrement_pct),
+        prev: null,
+        numFmt: '0.0"%"',
+        sign: 0,
       },
     ];
 
@@ -236,7 +299,10 @@ function Page() {
       const valueCell = row.getCell(2);
       valueCell.value = k.value;
       valueCell.numFmt = k.numFmt;
-      valueCell.font = { bold: true, color: { argb: k.sign > 0 ? ARGB.green : k.sign < 0 ? ARGB.red : ARGB.slate } };
+      valueCell.font = {
+        bold: true,
+        color: { argb: k.sign > 0 ? ARGB.green : k.sign < 0 ? ARGB.red : ARGB.slate },
+      };
       valueCell.alignment = { horizontal: "right", indent: 1 };
       valueCell.border = cellBorder;
 
@@ -250,7 +316,7 @@ function Page() {
       prevCell.border = cellBorder;
 
       if (zebra) {
-        [labelCell, valueCell, prevCell].forEach(c => {
+        [labelCell, valueCell, prevCell].forEach((c) => {
           c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ARGB.zebra } };
         });
       }
@@ -260,9 +326,18 @@ function Page() {
     // ── Data sheets ───────────────────────────────────────────────────────
     type Col = { header: string; width: number; numFmt?: string; align?: "left" | "right" };
 
-    const addSheet = (name: string, sheetTitle: string, cols: Col[], rows: (string | number)[][]): Worksheet => {
-      const ws = wb.addWorksheet(name, { views: [{ state: "frozen", ySplit: 3, showGridLines: false }] });
-      cols.forEach((c, i) => { ws.getColumn(i + 1).width = c.width; });
+    const addSheet = (
+      name: string,
+      sheetTitle: string,
+      cols: Col[],
+      rows: (string | number)[][],
+    ): Worksheet => {
+      const ws = wb.addWorksheet(name, {
+        views: [{ state: "frozen", ySplit: 3, showGridLines: false }],
+      });
+      cols.forEach((c, i) => {
+        ws.getColumn(i + 1).width = c.width;
+      });
 
       ws.mergeCells(1, 1, 1, cols.length);
       const titleCell = ws.getCell(1, 1);
@@ -294,7 +369,8 @@ function Page() {
           if (c.numFmt) cell.numFmt = c.numFmt;
           cell.alignment = { horizontal: c.align ?? "left", indent: 1 };
           cell.border = cellBorder;
-          if (zebra) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ARGB.zebra } };
+          if (zebra)
+            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ARGB.zebra } };
         });
       });
 
@@ -304,46 +380,101 @@ function Page() {
       return ws;
     };
 
-    addSheet("Évolution CA", "Évolution du chiffre d'affaires",
+    addSheet(
+      "Évolution CA",
+      "Évolution du chiffre d'affaires",
       [
         { header: "Mois", width: 14 },
         { header: "CA (GNF)", width: 20, numFmt: '#,##0" GNF"', align: "right" },
         { header: "Ventes", width: 12, numFmt: "#,##0", align: "right" },
       ],
-      revenueTrend.map(p => [p.label, p.ca, p.ventes]));
+      revenueTrend.map((p) => [p.label, p.ca, p.ventes]),
+    );
 
-    addSheet("Stock par catégorie", "Stock par catégorie",
+    addSheet(
+      "Stock par catégorie",
+      "Stock par catégorie",
       [
         { header: "Catégorie", width: 28 },
         { header: "Valeur (GNF)", width: 20, numFmt: '#,##0" GNF"', align: "right" },
       ],
-      stockByCategory.map(c => [c.category, c.valeur]));
+      stockByCategory.map((c) => [c.category, c.valeur]),
+    );
 
-    addSheet("Créances", "Recouvrement des créances",
+    addSheet(
+      "Créances",
+      "Recouvrement des créances",
       [
         { header: "Semaine", width: 12 },
         { header: "Encaissé (GNF)", width: 20, numFmt: '#,##0" GNF"', align: "right" },
         { header: "Nouvelles créances (GNF)", width: 26, numFmt: '#,##0" GNF"', align: "right" },
       ],
-      collectionTrend.map(w => [w.week, w.collected, w.outstanding]));
+      collectionTrend.map((w) => [w.week, w.collected, w.outstanding]),
+    );
 
-    addSheet("Boutiques", "Top boutiques",
+    addSheet(
+      "Boutiques",
+      "Top boutiques",
       [
         { header: "Boutique", width: 28 },
         { header: "CA (GNF)", width: 20, numFmt: '#,##0" GNF"', align: "right" },
       ],
-      storeRevenue.map(s => [s.nom, s.ca]));
+      storeRevenue.map((s) => [s.nom, s.ca]),
+    );
 
-    addSheet("Vendeurs", "Ventes par vendeur",
+    addSheet(
+      "Vendeurs",
+      "Ventes par vendeur",
       [
         { header: "Vendeur", width: 28 },
         { header: "Ventes", width: 12, numFmt: "#,##0", align: "right" },
         { header: "CA (GNF)", width: 20, numFmt: '#,##0" GNF"', align: "right" },
       ],
-      sellerRevenue.map(s => [s.nom, s.ventes, s.ca]));
+      sellerRevenue.map((s) => [s.nom, s.ventes, s.ca]),
+    );
+
+    addSheet(
+      "Balance âgée",
+      "Balance âgée des créances",
+      [
+        { header: "Tranche (jours)", width: 20 },
+        { header: "Montant (GNF)", width: 20, numFmt: '#,##0" GNF"', align: "right" },
+      ],
+      agedBalance.map((b) => [b.tranche, b.montant]),
+    );
+
+    if (supplyStats) {
+      addSheet(
+        "Approvisionnement",
+        "Suivi de l'approvisionnement",
+        [
+          { header: "Indicateur", width: 34 },
+          { header: "Valeur", width: 20, align: "right" },
+        ],
+        [
+          [
+            "Délai moyen de validation",
+            supplyStats.delai_moyen_validation_jours != null
+              ? `${Number(supplyStats.delai_moyen_validation_jours).toFixed(1)} j`
+              : "—",
+          ],
+          [
+            "Délai moyen de livraison",
+            supplyStats.delai_moyen_livraison_jours != null
+              ? `${Number(supplyStats.delai_moyen_livraison_jours).toFixed(1)} j`
+              : "—",
+          ],
+          ["Taux de rejet", fmtPct(Number(supplyStats.taux_rejet_pct))],
+          ["Taux d'écart à la réception", fmtPct(Number(supplyStats.taux_ecart_pct))],
+          ["Commandes soumises au total", supplyStats.nb_commandes],
+        ],
+      );
+    }
 
     const buffer = await wb.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -370,7 +501,9 @@ function Page() {
     doc.setFontSize(9);
     doc.text(store?.name ?? "Toutes les boutiques · Vue globale", margin, 21);
     doc.setFontSize(8.5);
-    doc.text(`Généré le ${new Date().toLocaleDateString("fr-FR")}`, pageWidth - margin, 14, { align: "right" });
+    doc.text(`Généré le ${new Date().toLocaleDateString("fr-FR")}`, pageWidth - margin, 14, {
+      align: "right",
+    });
 
     const cardY = 34;
     const cardH = 24;
@@ -382,10 +515,50 @@ function Page() {
     const margeDeltaV = deltaLabel(margeDelta);
     const margeAccent: [number, number, number] = Number(kpi.marge_pct) >= 0 ? RGB.green : RGB.red;
 
-    drawKpiCard(doc, margin, cardY, cardW, cardH, "CA du mois", pdfXAF(Number(kpi.ca_mois)), caDelta, RGB.indigo);
-    drawKpiCard(doc, margin + cardW + gap, cardY, cardW, cardH, "Ventes du mois", fmtInt(kpi.ventes_mois), ventesDeltaV, RGB.green);
-    drawKpiCard(doc, margin + (cardW + gap) * 2, cardY, cardW, cardH, "Marge", fmtPct(Number(kpi.marge_pct)), margeDeltaV, margeAccent);
-    drawKpiCard(doc, margin + (cardW + gap) * 3, cardY, cardW, cardH, "Recouvrement des créances", fmtPct(Number(kpi.recouvrement_pct)), null, RGB.slateLight);
+    drawKpiCard(
+      doc,
+      margin,
+      cardY,
+      cardW,
+      cardH,
+      "CA du mois",
+      pdfXAF(Number(kpi.ca_mois)),
+      caDelta,
+      RGB.indigo,
+    );
+    drawKpiCard(
+      doc,
+      margin + cardW + gap,
+      cardY,
+      cardW,
+      cardH,
+      "Ventes du mois",
+      fmtInt(kpi.ventes_mois),
+      ventesDeltaV,
+      RGB.green,
+    );
+    drawKpiCard(
+      doc,
+      margin + (cardW + gap) * 2,
+      cardY,
+      cardW,
+      cardH,
+      "Marge",
+      fmtPct(Number(kpi.marge_pct)),
+      margeDeltaV,
+      margeAccent,
+    );
+    drawKpiCard(
+      doc,
+      margin + (cardW + gap) * 3,
+      cardY,
+      cardW,
+      cardH,
+      "Recouvrement des créances",
+      fmtPct(Number(kpi.recouvrement_pct)),
+      null,
+      RGB.slateLight,
+    );
 
     const section1Y = cardY + cardH + 12;
     sectionHeader(doc, margin, section1Y, "Évolution du chiffre d'affaires");
@@ -393,7 +566,7 @@ function Page() {
       startY: section1Y + 4,
       margin: { left: margin, right: margin },
       head: [["Mois", "CA", "Ventes"]],
-      body: revenueTrend.map(p => [p.label, pdfXAF(p.ca), fmtInt(p.ventes)]),
+      body: revenueTrend.map((p) => [p.label, pdfXAF(p.ca), fmtInt(p.ventes)]),
       theme: "grid",
       styles: { fontSize: 8, textColor: RGB.slate, lineColor: RGB.border, lineWidth: 0.1 },
       headStyles: { fillColor: RGB.indigo, textColor: RGB.white, fontStyle: "bold" },
@@ -409,7 +582,7 @@ function Page() {
       startY: 24,
       margin: { left: margin, right: margin },
       head: [["Catégorie", "Valeur"]],
-      body: stockByCategory.map(c => [c.category, pdfXAF(c.valeur)]),
+      body: stockByCategory.map((c) => [c.category, pdfXAF(c.valeur)]),
       theme: "grid",
       styles: { fontSize: 8, textColor: RGB.slate, lineColor: RGB.border, lineWidth: 0.1 },
       headStyles: { fillColor: RGB.indigo, textColor: RGB.white, fontStyle: "bold" },
@@ -423,7 +596,7 @@ function Page() {
       startY: y2 + 4,
       margin: { left: margin, right: margin },
       head: [["Semaine", "Encaissé", "Nouvelles créances"]],
-      body: collectionTrend.map(w => [w.week, pdfXAF(w.collected), pdfXAF(w.outstanding)]),
+      body: collectionTrend.map((w) => [w.week, pdfXAF(w.collected), pdfXAF(w.outstanding)]),
       theme: "grid",
       styles: { fontSize: 8, textColor: RGB.slate, lineColor: RGB.border, lineWidth: 0.1 },
       headStyles: { fillColor: RGB.indigo, textColor: RGB.white, fontStyle: "bold" },
@@ -439,7 +612,7 @@ function Page() {
       startY: 24,
       margin: { left: margin, right: margin },
       head: [["Boutique", "CA"]],
-      body: storeRevenue.map(s => [s.nom, pdfXAF(s.ca)]),
+      body: storeRevenue.map((s) => [s.nom, pdfXAF(s.ca)]),
       theme: "grid",
       styles: { fontSize: 8, textColor: RGB.slate, lineColor: RGB.border, lineWidth: 0.1 },
       headStyles: { fillColor: RGB.indigo, textColor: RGB.white, fontStyle: "bold" },
@@ -453,7 +626,7 @@ function Page() {
       startY: y3 + 4,
       margin: { left: margin, right: margin },
       head: [["Vendeur", "Ventes", "CA"]],
-      body: sellerRevenue.map(s => [s.nom, fmtInt(s.ventes), pdfXAF(s.ca)]),
+      body: sellerRevenue.map((s) => [s.nom, fmtInt(s.ventes), pdfXAF(s.ca)]),
       theme: "grid",
       styles: { fontSize: 8, textColor: RGB.slate, lineColor: RGB.border, lineWidth: 0.1 },
       headStyles: { fillColor: RGB.indigo, textColor: RGB.white, fontStyle: "bold" },
@@ -461,21 +634,75 @@ function Page() {
       columnStyles: { 1: { halign: "right" }, 2: { halign: "right" } },
     });
 
+    // ── Page 4 : balance âgée + approvisionnement ────────────────────────────
+    doc.addPage();
+    pageTopBar(doc, "Créances & Approvisionnement");
+    sectionHeader(doc, margin, 20, "Balance âgée des créances");
+    autoTable(doc, {
+      startY: 24,
+      margin: { left: margin, right: margin },
+      head: [["Tranche (jours)", "Montant"]],
+      body: agedBalance.map((b) => [b.tranche, pdfXAF(b.montant)]),
+      theme: "grid",
+      styles: { fontSize: 8, textColor: RGB.slate, lineColor: RGB.border, lineWidth: 0.1 },
+      headStyles: { fillColor: RGB.indigo, textColor: RGB.white, fontStyle: "bold" },
+      alternateRowStyles: { fillColor: RGB.zebra },
+      columnStyles: { 1: { halign: "right" } },
+    });
+
+    if (supplyStats) {
+      const y4 =
+        (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 12;
+      sectionHeader(doc, margin, y4, "Suivi de l'approvisionnement");
+      autoTable(doc, {
+        startY: y4 + 4,
+        margin: { left: margin, right: margin },
+        head: [["Indicateur", "Valeur"]],
+        body: [
+          [
+            "Délai moyen de validation",
+            supplyStats.delai_moyen_validation_jours != null
+              ? `${Number(supplyStats.delai_moyen_validation_jours).toFixed(1)} j`
+              : "—",
+          ],
+          [
+            "Délai moyen de livraison",
+            supplyStats.delai_moyen_livraison_jours != null
+              ? `${Number(supplyStats.delai_moyen_livraison_jours).toFixed(1)} j`
+              : "—",
+          ],
+          ["Taux de rejet", fmtPct(Number(supplyStats.taux_rejet_pct))],
+          ["Taux d'écart à la réception", fmtPct(Number(supplyStats.taux_ecart_pct))],
+          ["Commandes soumises au total", fmtInt(supplyStats.nb_commandes)],
+        ],
+        theme: "grid",
+        styles: { fontSize: 8, textColor: RGB.slate, lineColor: RGB.border, lineWidth: 0.1 },
+        headStyles: { fillColor: RGB.indigo, textColor: RGB.white, fontStyle: "bold" },
+        alternateRowStyles: { fillColor: RGB.zebra },
+        columnStyles: { 1: { halign: "right" } },
+      });
+    }
+
     addPdfFooter(doc);
     doc.save(`rapports-analyses-${today}.pdf`);
     toast.success("Rapport exporté (PDF)");
   };
-
 
   return (
     <>
       <PageHeader
         title={t("reports.title") as string}
         description={t("reports.subtitle") as string}
-        actions={<>
-          <Button variant="outline" size="sm" onClick={exportPdf} disabled={!kpi}><FileText className="mr-1.5 h-3.5 w-3.5" /> PDF</Button>
-          <Button variant="outline" size="sm" onClick={exportXlsx} disabled={!kpi}><FileSpreadsheet className="mr-1.5 h-3.5 w-3.5" /> Excel</Button>
-        </>}
+        actions={
+          <>
+            <Button variant="outline" size="sm" onClick={exportPdf} disabled={!kpi}>
+              <FileText className="mr-1.5 h-3.5 w-3.5" /> PDF
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportXlsx} disabled={!kpi}>
+              <FileSpreadsheet className="mr-1.5 h-3.5 w-3.5" /> Excel
+            </Button>
+          </>
+        }
       />
 
       {isLoading ? (
@@ -484,7 +711,10 @@ function Page() {
         </div>
       ) : error ? (
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-6 text-center text-sm text-destructive">
-          Impossible de charger les rapports. <Button variant="link" size="sm" onClick={() => refetch()}>Réessayer</Button>
+          Impossible de charger les rapports.{" "}
+          <Button variant="link" size="sm" onClick={() => refetch()}>
+            Réessayer
+          </Button>
         </div>
       ) : (
         <>
@@ -517,113 +747,359 @@ function Page() {
               <TabsTrigger value="sales">{t("reports.tab.revenue") as string}</TabsTrigger>
               <TabsTrigger value="inventory">{t("reports.tab.inventory") as string}</TabsTrigger>
               <TabsTrigger value="debts">{t("reports.tab.debts") as string}</TabsTrigger>
+              <TabsTrigger value="supply">{t("reports.tab.supply") as string}</TabsTrigger>
               <TabsTrigger value="stores">{t("nav.stores") as string}</TabsTrigger>
               <TabsTrigger value="sellers">{t("role.cashier") as string}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="sales" className="mt-4 grid gap-4 lg:grid-cols-2">
               <Card className="shadow-soft">
-                <CardHeader><CardTitle className="text-base">{t("dashboard.revenueTrend") as string}</CardTitle></CardHeader>
-                <CardContent><div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={revenueTrend} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
-                      <defs><linearGradient id="r2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--color-chart-1)" stopOpacity={0.4} /><stop offset="100%" stopColor="var(--color-chart-1)" stopOpacity={0} /></linearGradient></defs>
-                      <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
-                      <YAxis stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => fmtXAF(Number(v))} width={110} />
-                      <Tooltip {...tip} formatter={(v: number) => fmtXAF(Number(v))} />
-                      <Area type="monotone" dataKey="ca" stroke="var(--color-chart-1)" strokeWidth={2} fill="url(#r2)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div></CardContent>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    {t("dashboard.revenueTrend") as string}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart
+                        data={revenueTrend}
+                        margin={{ top: 8, right: 8, left: 8, bottom: 0 }}
+                      >
+                        <defs>
+                          <linearGradient id="r2" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="var(--color-chart-1)" stopOpacity={0.4} />
+                            <stop offset="100%" stopColor="var(--color-chart-1)" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid
+                          stroke="var(--border)"
+                          strokeDasharray="3 3"
+                          vertical={false}
+                        />
+                        <XAxis
+                          dataKey="label"
+                          stroke="var(--muted-foreground)"
+                          fontSize={11}
+                          tickLine={false}
+                          axisLine={false}
+                        />
+                        <YAxis
+                          stroke="var(--muted-foreground)"
+                          fontSize={11}
+                          tickLine={false}
+                          axisLine={false}
+                          tickFormatter={(v) => fmtXAF(Number(v))}
+                          width={110}
+                        />
+                        <Tooltip {...tip} formatter={(v: number) => fmtXAF(Number(v))} />
+                        <Area
+                          type="monotone"
+                          dataKey="ca"
+                          stroke="var(--color-chart-1)"
+                          strokeWidth={2}
+                          fill="url(#r2)"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
               </Card>
               <Card className="shadow-soft">
-                <CardHeader><CardTitle className="text-base">{t("dashboard.kpi.orders") as string}</CardTitle></CardHeader>
-                <CardContent><div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={revenueTrend} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-                      <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
-                      <YAxis stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => fmtInt(Number(v))} />
-                      <Tooltip {...tip} formatter={(v: number) => fmtInt(Number(v))} />
-                      <Line type="monotone" dataKey="ventes" stroke="var(--color-chart-2)" strokeWidth={2.5} dot={{ r: 3 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div></CardContent>
+                <CardHeader>
+                  <CardTitle className="text-base">{t("dashboard.kpi.orders") as string}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={revenueTrend}
+                        margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
+                      >
+                        <CartesianGrid
+                          stroke="var(--border)"
+                          strokeDasharray="3 3"
+                          vertical={false}
+                        />
+                        <XAxis
+                          dataKey="label"
+                          stroke="var(--muted-foreground)"
+                          fontSize={11}
+                          tickLine={false}
+                          axisLine={false}
+                        />
+                        <YAxis
+                          stroke="var(--muted-foreground)"
+                          fontSize={11}
+                          tickLine={false}
+                          axisLine={false}
+                          tickFormatter={(v) => fmtInt(Number(v))}
+                        />
+                        <Tooltip {...tip} formatter={(v: number) => fmtInt(Number(v))} />
+                        <Line
+                          type="monotone"
+                          dataKey="ventes"
+                          stroke="var(--color-chart-2)"
+                          strokeWidth={2.5}
+                          dot={{ r: 3 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
               </Card>
             </TabsContent>
 
             <TabsContent value="inventory" className="mt-4">
-              <Card className="shadow-soft"><CardHeader><CardTitle className="text-base">{t("dashboard.inventoryByCat") as string}</CardTitle></CardHeader>
-                <CardContent><div className="h-80">
-                  {stockByCategory.length === 0 ? (
-                    <div className="flex h-full items-center justify-center text-xs text-muted-foreground">Aucune valeur de stock</div>
-                  ) : (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart><Pie data={stockByCategory} dataKey="valeur" nameKey="category" innerRadius={70} outerRadius={120}>
-                        {stockByCategory.map((_, i) => <Cell key={i} fill={`var(--color-chart-${(i % 5) + 1})`} />)}
-                      </Pie><Tooltip {...tip} formatter={(v: number) => fmtXAF(Number(v))} /><Legend wrapperStyle={{ fontSize: 11 }} iconType="circle" /></PieChart>
-                    </ResponsiveContainer>
-                  )}
-                </div></CardContent>
+              <Card className="shadow-soft">
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    {t("dashboard.inventoryByCat") as string}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80">
+                    {stockByCategory.length === 0 ? (
+                      <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+                        Aucune valeur de stock
+                      </div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={stockByCategory}
+                            dataKey="valeur"
+                            nameKey="category"
+                            innerRadius={70}
+                            outerRadius={120}
+                          >
+                            {stockByCategory.map((_, i) => (
+                              <Cell key={i} fill={`var(--color-chart-${(i % 5) + 1})`} />
+                            ))}
+                          </Pie>
+                          <Tooltip {...tip} formatter={(v: number) => fmtXAF(Number(v))} />
+                          <Legend wrapperStyle={{ fontSize: 11 }} iconType="circle" />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
+                  </div>
+                </CardContent>
               </Card>
             </TabsContent>
 
-            <TabsContent value="debts" className="mt-4">
-              <Card className="shadow-soft"><CardHeader><CardTitle className="text-base">{t("dashboard.collection") as string}</CardTitle></CardHeader>
-                <CardContent><div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={collectionTrend} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
-                      <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="week" stroke="var(--muted-foreground)" fontSize={11} />
-                      <YAxis stroke="var(--muted-foreground)" fontSize={11} tickFormatter={(v) => fmtXAF(Number(v))} width={110} />
-                      <Tooltip {...tip} formatter={(v: number) => fmtXAF(Number(v))} />
-                      <Legend wrapperStyle={{ fontSize: 11 }} />
-                      <Bar dataKey="collected" name={t("dashboard.chart.collected") as string} fill="var(--color-chart-2)" radius={[6, 6, 0, 0]} />
-                      <Bar dataKey="outstanding" name={t("dashboard.chart.outstanding") as string} fill="var(--color-chart-4)" radius={[6, 6, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div></CardContent>
+            <TabsContent value="debts" className="mt-4 grid gap-4 lg:grid-cols-2">
+              <Card className="shadow-soft">
+                <CardHeader>
+                  <CardTitle className="text-base">{t("dashboard.collection") as string}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={collectionTrend}
+                        margin={{ top: 8, right: 8, left: 8, bottom: 0 }}
+                      >
+                        <CartesianGrid
+                          stroke="var(--border)"
+                          strokeDasharray="3 3"
+                          vertical={false}
+                        />
+                        <XAxis dataKey="week" stroke="var(--muted-foreground)" fontSize={11} />
+                        <YAxis
+                          stroke="var(--muted-foreground)"
+                          fontSize={11}
+                          tickFormatter={(v) => fmtXAF(Number(v))}
+                          width={110}
+                        />
+                        <Tooltip {...tip} formatter={(v: number) => fmtXAF(Number(v))} />
+                        <Legend wrapperStyle={{ fontSize: 11 }} />
+                        <Bar
+                          dataKey="collected"
+                          name={t("dashboard.chart.collected") as string}
+                          fill="var(--color-chart-2)"
+                          radius={[6, 6, 0, 0]}
+                        />
+                        <Bar
+                          dataKey="outstanding"
+                          name={t("dashboard.chart.outstanding") as string}
+                          fill="var(--color-chart-4)"
+                          radius={[6, 6, 0, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
               </Card>
+              <Card className="shadow-soft">
+                <CardHeader>
+                  <CardTitle className="text-base">{t("reports.agedBalance") as string}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-72">
+                    {agedBalance.every((b) => b.montant === 0) ? (
+                      <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+                        {t("common.empty") as string}
+                      </div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={agedBalance}
+                          margin={{ top: 8, right: 8, left: 8, bottom: 0 }}
+                        >
+                          <CartesianGrid
+                            stroke="var(--border)"
+                            strokeDasharray="3 3"
+                            vertical={false}
+                          />
+                          <XAxis dataKey="tranche" stroke="var(--muted-foreground)" fontSize={11} />
+                          <YAxis
+                            stroke="var(--muted-foreground)"
+                            fontSize={11}
+                            tickFormatter={(v) => fmtXAF(Number(v))}
+                            width={110}
+                          />
+                          <Tooltip {...tip} formatter={(v: number) => fmtXAF(Number(v))} />
+                          <Bar dataKey="montant" radius={[6, 6, 0, 0]}>
+                            {agedBalance.map((b, i) => (
+                              <Cell
+                                key={i}
+                                fill={
+                                  b.tranche === "90+"
+                                    ? "var(--color-destructive)"
+                                    : b.tranche === "61-90"
+                                      ? "var(--color-chart-4)"
+                                      : "var(--color-chart-2)"
+                                }
+                              />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="supply" className="mt-4 space-y-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+                <KpiCard
+                  label={t("reports.supply.delaiValidation") as string}
+                  value={
+                    supplyStats?.delai_moyen_validation_jours != null
+                      ? `${Number(supplyStats.delai_moyen_validation_jours).toFixed(1)} j`
+                      : "—"
+                  }
+                  tone="primary"
+                  icon={<Clock className="h-5 w-5" />}
+                />
+                <KpiCard
+                  label={t("reports.supply.delaiLivraison") as string}
+                  value={
+                    supplyStats?.delai_moyen_livraison_jours != null
+                      ? `${Number(supplyStats.delai_moyen_livraison_jours).toFixed(1)} j`
+                      : "—"
+                  }
+                  tone="success"
+                  icon={<Truck className="h-5 w-5" />}
+                />
+                <KpiCard
+                  label={t("reports.supply.tauxRejet") as string}
+                  value={supplyStats ? fmtPct(Number(supplyStats.taux_rejet_pct)) : "—"}
+                  tone="destructive"
+                  icon={<Ban className="h-5 w-5" />}
+                />
+                <KpiCard
+                  label={t("reports.supply.tauxEcart") as string}
+                  value={supplyStats ? fmtPct(Number(supplyStats.taux_ecart_pct)) : "—"}
+                  tone="warning"
+                  icon={<AlertTriangle className="h-5 w-5" />}
+                  hint={
+                    supplyStats
+                      ? `${supplyStats.nb_commandes} ${t("reports.supply.nbCommandes") as string}`
+                      : undefined
+                  }
+                />
+              </div>
             </TabsContent>
 
             <TabsContent value="stores" className="mt-4">
-              <Card className="shadow-soft"><CardHeader><CardTitle className="text-base">{t("dashboard.topStores") as string}</CardTitle></CardHeader>
-                <CardContent><div className="h-80">
-                  {storeRevenue.length === 0 ? (
-                    <div className="flex h-full items-center justify-center text-xs text-muted-foreground">Aucune vente ce mois</div>
-                  ) : (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={storeRevenue} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
-                        <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
-                        <XAxis dataKey="nom" stroke="var(--muted-foreground)" fontSize={11} />
-                        <YAxis stroke="var(--muted-foreground)" fontSize={11} tickFormatter={(v) => fmtXAF(Number(v))} width={110} />
-                        <Tooltip {...tip} formatter={(v: number) => fmtXAF(Number(v))} />
-                        <Bar dataKey="ca" fill="var(--color-chart-1)" radius={[6, 6, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  )}
-                </div></CardContent>
+              <Card className="shadow-soft">
+                <CardHeader>
+                  <CardTitle className="text-base">{t("dashboard.topStores") as string}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80">
+                    {storeRevenue.length === 0 ? (
+                      <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+                        Aucune vente ce mois
+                      </div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={storeRevenue}
+                          margin={{ top: 8, right: 8, left: 8, bottom: 0 }}
+                        >
+                          <CartesianGrid
+                            stroke="var(--border)"
+                            strokeDasharray="3 3"
+                            vertical={false}
+                          />
+                          <XAxis dataKey="nom" stroke="var(--muted-foreground)" fontSize={11} />
+                          <YAxis
+                            stroke="var(--muted-foreground)"
+                            fontSize={11}
+                            tickFormatter={(v) => fmtXAF(Number(v))}
+                            width={110}
+                          />
+                          <Tooltip {...tip} formatter={(v: number) => fmtXAF(Number(v))} />
+                          <Bar dataKey="ca" fill="var(--color-chart-1)" radius={[6, 6, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </div>
+                </CardContent>
               </Card>
             </TabsContent>
 
             <TabsContent value="sellers" className="mt-4">
-              <Card className="shadow-soft"><CardHeader><CardTitle className="text-base">{t("role.cashier") as string}</CardTitle></CardHeader>
-                <CardContent><div className="h-72">
-                  {sellerRevenue.length === 0 ? (
-                    <div className="flex h-full items-center justify-center text-xs text-muted-foreground">Aucune vente ce mois</div>
-                  ) : (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart layout="vertical" data={sellerRevenue} margin={{ top: 0, right: 16, left: 8, bottom: 0 }}>
-                        <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" horizontal={false} />
-                        <XAxis type="number" stroke="var(--muted-foreground)" fontSize={11} />
-                        <YAxis type="category" dataKey="nom" width={90} stroke="var(--muted-foreground)" fontSize={11} />
-                        <Tooltip {...tip} />
-                        <Bar dataKey="ventes" fill="var(--color-chart-3)" radius={[0, 6, 6, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  )}
-                </div></CardContent>
+              <Card className="shadow-soft">
+                <CardHeader>
+                  <CardTitle className="text-base">{t("role.cashier") as string}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-72">
+                    {sellerRevenue.length === 0 ? (
+                      <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+                        Aucune vente ce mois
+                      </div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          layout="vertical"
+                          data={sellerRevenue}
+                          margin={{ top: 0, right: 16, left: 8, bottom: 0 }}
+                        >
+                          <CartesianGrid
+                            stroke="var(--border)"
+                            strokeDasharray="3 3"
+                            horizontal={false}
+                          />
+                          <XAxis type="number" stroke="var(--muted-foreground)" fontSize={11} />
+                          <YAxis
+                            type="category"
+                            dataKey="nom"
+                            width={90}
+                            stroke="var(--muted-foreground)"
+                            fontSize={11}
+                          />
+                          <Tooltip {...tip} />
+                          <Bar dataKey="ventes" fill="var(--color-chart-3)" radius={[0, 6, 6, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </div>
+                </CardContent>
               </Card>
             </TabsContent>
           </Tabs>

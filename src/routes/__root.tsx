@@ -14,6 +14,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { InstallPrompt } from "@/components/install-prompt";
 import "@/lib/i18n";
 import { useT } from "@/lib/i18n";
+import { PRINT_FONTS_URL } from "@/lib/print-engine/constants";
 
 function NotFoundComponent() {
   const { t } = useT();
@@ -127,7 +128,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" },
+      // Inter (UI) + Barlow Condensed / Fraunces (the two A4 document
+      // letterheads) — one request, see print-engine/constants.ts.
+      { rel: "stylesheet", href: PRINT_FONTS_URL },
       { rel: "stylesheet", href: appCss },
     ],
     scripts: [

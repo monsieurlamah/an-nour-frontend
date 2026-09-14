@@ -1,5 +1,5 @@
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
-import { useState, useEffect, useCallback, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,6 @@ import {
   ShieldCheck,
   Globe,
   Check,
-  Lock,
   ArrowRight,
   Mail,
   User,
@@ -43,171 +42,6 @@ export const Route = createFileRoute("/login")({
   },
   component: LoginPage,
 });
-
-const SLIDE_DURATION = 5000;
-
-const SLIDES = [
-  {
-    img: "/slide-african.png",
-    badge: ["Marché Africain", "African Market"] as [string, string],
-    title: ["Gérez votre commerce comme un pro", "Run your business like a pro"] as [string, string],
-    sub: [
-      "Stocks, ventes et clients centralisés. Pilotez toutes vos boutiques depuis un seul espace.",
-      "Inventory, sales and customers in one place. Manage all your stores from a single workspace.",
-    ] as [string, string],
-  },
-  {
-    img: "/slide-person.png",
-    badge: ["Équipes & Accès", "Teams & Access"] as [string, string],
-    title: ["Vos équipes, vos règles", "Your teams, your rules"] as [string, string],
-    sub: [
-      "Définissez des permissions par rôle et suivez chaque action en temps réel, sans friction.",
-      "Set role-based permissions and track every action in real time, without any friction.",
-    ] as [string, string],
-  },
-  {
-    img: "/slide-vendezplus.jpg",
-    badge: ["Croissance", "Growth"] as [string, string],
-    title: ["Vendez plus, tracez tout", "Sell more, track everything"] as [string, string],
-    sub: [
-      "Point de vente intégré, rapports instantanés et gestion des créances automatisée.",
-      "Built-in POS, instant reports and automated debt management.",
-    ] as [string, string],
-  },
-];
-
-function BrandSlider() {
-  const { lang } = useT();
-  const [current, setCurrent] = useState(0);
-  const [acts, setActs] = useState([0, 0, 0]);
-  const [tick, setTick] = useState(0);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % SLIDES.length);
-    }, SLIDE_DURATION);
-    return () => clearInterval(id);
-  }, [tick]);
-
-  useEffect(() => {
-    setActs((prev) => {
-      const next = [...prev];
-      next[current]++;
-      return next;
-    });
-  }, [current]);
-
-  const goTo = useCallback((i: number) => {
-    setCurrent(i);
-    setTick((t) => t + 1);
-  }, []);
-
-  const li = lang === "en" ? 1 : 0;
-
-  return (
-    <div className="relative h-full w-full overflow-hidden">
-      {/* Image layers — stacked, crossfade via parent opacity */}
-      {SLIDES.map((s, i) => (
-        <div
-          key={s.img}
-          aria-hidden="true"
-          className="absolute inset-0 transition-opacity duration-700 ease-in-out"
-          style={{ opacity: current === i ? 1 : 0 }}
-        >
-          <img
-            key={`${i}-${acts[i]}`}
-            src={s.img}
-            alt=""
-            className={cn(
-              "h-full w-full object-cover",
-              current === i && "animate-kenburns",
-            )}
-          />
-        </div>
-      ))}
-
-      {/* Gradient overlays */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/55" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-black/40 to-transparent" />
-
-      {/* UI layer */}
-      <div className="relative flex h-full flex-col p-10 text-white">
-        {/* Logo */}
-        <Link to="/login" className="flex w-fit items-center">
-          <img
-            src="/logoGroup.jpeg"
-            alt="AN-NOUR Group"
-            className="h-14 w-auto rounded-lg object-contain shadow-md"
-          />
-        </Link>
-
-        <div className="flex-1" />
-
-        {/* Slide text — stacked, slide-up + fade per slide */}
-        <div className="relative mb-8" style={{ minHeight: "9rem" }}>
-          {SLIDES.map((s, i) => (
-            <div
-              key={i}
-              className={cn(
-                "absolute inset-0 flex flex-col justify-end transition-all duration-700 ease-out",
-                current === i
-                  ? "translate-y-0 opacity-100"
-                  : "pointer-events-none translate-y-4 opacity-0",
-              )}
-            >
-              <span className="mb-3 w-fit rounded-full border border-white/30 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white/90 backdrop-blur">
-                {s.badge[li]}
-              </span>
-              <h2 className="text-[1.9rem] font-semibold leading-tight tracking-tight">
-                {s.title[li]}
-              </h2>
-              <p className="mt-2 max-w-sm text-[13px] leading-relaxed text-white/75">
-                {s.sub[li]}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* Progress bars */}
-        <div className="mb-5 flex gap-2">
-          {SLIDES.map((_, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => goTo(i)}
-              className="group relative h-[3px] flex-1 cursor-pointer overflow-hidden rounded-full bg-white/25"
-              aria-label={`Slide ${i + 1}`}
-            >
-              {i < current && (
-                <span className="absolute inset-0 rounded-full bg-white/70" />
-              )}
-              {i === current && (
-                <span
-                  key={`prog-${current}-${tick}`}
-                  className="animate-slide-progress absolute inset-y-0 left-0 w-full origin-left rounded-full bg-white"
-                />
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* Trust badges */}
-        <div className="flex items-center justify-between text-[11px] text-white/50">
-          <span>© 2026 AN-NOUR</span>
-          <span className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-1">
-              <Lock className="h-3 w-3" /> SSL
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <ShieldCheck className="h-3 w-3" /> SOC 2
-            </span>
-            <span>GDPR</span>
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function LangBtn() {
   const { lang, setLang } = useT();
@@ -244,47 +78,46 @@ export function AuthLayout({
 }) {
   const { t } = useT();
   return (
-    <div className="grid min-h-dvh grid-cols-1 bg-background lg:grid-cols-[1.05fr_minmax(0,560px)]">
-      {/* Brand panel — image slideshow */}
-      <div className="relative hidden overflow-hidden lg:block">
-        <BrandSlider />
+    <div className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-background px-5 py-12 sm:px-8">
+      {/* Soft brand-colored glow, navy + gold — depth without a photo. */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute left-1/2 top-0 h-[560px] w-[560px] -translate-x-1/2 -translate-y-2/5 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute bottom-0 right-1/2 h-[420px] w-[420px] translate-x-2/3 translate-y-1/3 rounded-full bg-warning/10 blur-3xl" />
       </div>
 
-      {/* Form panel */}
-      <div className="relative flex flex-col">
-        {/* Soft top accent on mobile */}
-        <div className="absolute inset-x-0 top-0 h-40 gradient-brand opacity-90 lg:hidden" />
-        <div className="absolute inset-x-0 top-0 h-40 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.3),transparent_70%)] lg:hidden" />
+      <div className="absolute right-5 top-5 z-10 sm:right-8 sm:top-8">
+        <LangBtn />
+      </div>
 
-        <div className="relative z-10 flex items-center justify-between p-5 sm:p-8">
-          <Link to="/login" className="flex items-center gap-2.5 lg:invisible">
-            <img
-              src="/logoGroup.jpeg"
-              alt="AN-NOUR Group"
-              className="h-10 w-auto rounded-md object-contain lg:hidden"
-            />
-          </Link>
-          <LangBtn />
-        </div>
+      <div className="relative z-10 w-full max-w-md">
+        <Link to="/login" className="mb-8 flex justify-center">
+          <img
+            src="/logoGroup.jpeg"
+            alt="AN-NOUR Group"
+            className="h-20 w-auto rounded-2xl object-contain shadow-elevated"
+          />
+        </Link>
 
-        <div className="relative z-10 flex flex-1 items-center justify-center px-5 pb-10 sm:px-8">
-          <div className="w-full max-w-md">
-            <div className="rounded-3xl border bg-card p-6 shadow-elevated sm:p-8">
-              {eyebrow && (
-                <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
-                  {eyebrow}
-                </div>
-              )}
-              <h1 className="text-pretty text-[26px] font-semibold leading-tight tracking-tight">{title}</h1>
-              {subtitle && <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{subtitle}</p>}
-              <div className="mt-7">{children}</div>
+        <div className="rounded-3xl border bg-card p-6 shadow-elevated sm:p-8">
+          {eyebrow && (
+            <div className="mx-auto mb-3 flex w-fit items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
+              {eyebrow}
             </div>
-
-            <p className="mt-6 text-center text-[11px] text-muted-foreground">
-              {t("auth.legal") as string}
+          )}
+          <h1 className="text-pretty text-center text-[26px] font-semibold leading-tight tracking-tight">
+            {title}
+          </h1>
+          {subtitle && (
+            <p className="mt-2 text-center text-sm leading-relaxed text-muted-foreground">
+              {subtitle}
             </p>
-          </div>
+          )}
+          <div className="mt-7">{children}</div>
         </div>
+
+        <p className="mt-6 text-center text-[11px] text-muted-foreground">
+          {t("auth.legal") as string}
+        </p>
       </div>
     </div>
   );

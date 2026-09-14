@@ -5,7 +5,13 @@ import i18n from "@/lib/i18n";
 // - Transparently refreshes the access token once on a 401, then retries.
 // - Normalises backend errors into a typed `ApiError`.
 
-const API_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:8001").replace(/\/$/, "");
+// Falls back to this project's own backend port (see backend/.env PORT) when
+// VITE_API_URL isn't set — never another local project's port. A wrong
+// fallback here fails silently as a CORS/network error client-side ("Impossible
+// de contacter le serveur"), which is very hard to diagnose without reading
+// this file, so get it right rather than relying on every dev having a
+// frontend/.env.
+const API_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:8005").replace(/\/$/, "");
 const API_PREFIX = "/api/v1";
 
 const ACCESS_KEY = "eboutique.access_token";

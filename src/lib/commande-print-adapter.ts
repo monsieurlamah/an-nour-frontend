@@ -4,13 +4,21 @@
 
 import type { CommandeRead, CommandeLigneRead, StoreRead } from "@/lib/types";
 import type { DocumentPrintData, PrintOrganization, PrintCustomer } from "@/lib/print-engine";
-import { COMMANDE_DOCUMENT_FOOTER } from "@/lib/print-engine/constants";
 
-// Every commande document (bon de commande / facture proforma / facture /
-// bon de livraison) closes on the same fixed identity footer — see
-// COMMANDE_DOCUMENT_FOOTER. The disclaimer that used to live in that slot
-// moves to `notes`, rendered as a small caption near the title instead.
+// Every A4 document closes on the fixed letterhead footer (see
+// DOCUMENT_FOOTER_LINES in print-engine/constants.ts — applied by the
+// template itself, nothing to pass here). The internal-use disclaimer goes
+// in `notes`, rendered in the "Règlement" block.
 const INTERNAL_DISCLAIMER = "Document interne de réapprovisionnement — sans valeur fiscale.";
+
+/** The group's head office, as the counter-party of every réappro
+ * document: recipient of the boutique's bon de commande, issuer of the
+ * proforma / facture / bon de livraison. */
+const DIRECTION_GENERALE: PrintOrganization = {
+  name: "AN-NOUR — Direction Générale",
+  logo: "/logoGroup.jpeg",
+  brand: "group",
+};
 
 function ligneName(ligne: CommandeLigneRead, productName?: (id: number) => string): string {
   if (ligne.produit_id != null) return productName?.(ligne.produit_id) ?? `Produit #${ligne.produit_id}`;
@@ -30,10 +38,12 @@ export function commandeToDemandeDocument(
   const organization: PrintOrganization = {
     name: opts.store?.name ?? "Boutique",
     address: opts.store?.address ?? undefined,
-    // A demande is authored BY the boutique, addressed to HQ — boutique logo,
-    // same convention as sale receipts (see pos-print-adapter.ts).
+    // A demande is authored BY the boutique, addressed to HQ — boutique logo
+    // and letterhead, same convention as sale receipts (pos-print-adapter.ts).
     logo: "/logoBoutique.jpeg",
+    brand: "boutique",
   };
+  const customer: PrintCustomer = { name: DIRECTION_GENERALE.name };
 
   const lines = commande.lignes.map((l) => ({
     name: ligneName(l, opts.productName),
@@ -51,6 +61,7 @@ export function commandeToDemandeDocument(
     createdAt: commande.created_at,
     organization,
     issuer: opts.issuerName ? { name: opts.issuerName, role: "Gérant boutique" } : undefined,
+    customer,
     lines,
     totals: { subtotal, total: subtotal },
     payments: [],
@@ -58,7 +69,6 @@ export function commandeToDemandeDocument(
     amountDue: 0,
     notes: INTERNAL_DISCLAIMER,
     qrContent: commande.numero ?? undefined,
-    footerOverride: COMMANDE_DOCUMENT_FOOTER,
   };
 }
 
@@ -72,11 +82,9 @@ export function commandeToProformaDocument(
     productName?: (id: number) => string;
   } = {},
 ): DocumentPrintData {
-  const organization: PrintOrganization = {
-    name: "AN-NOUR — Direction Générale",
-    // A proforma is authored BY HQ, addressed to the boutique — group logo.
-    logo: "/logoGroup.jpeg",
-  };
+  // A proforma is authored BY HQ, addressed to the boutique — group logo and
+  // the AN-NOUR GROUP letterhead.
+  const organization = DIRECTION_GENERALE;
 
   const customer: PrintCustomer | undefined = opts.destinationStore
     ? { name: opts.destinationStore.name, address: opts.destinationStore.address ?? undefined }
@@ -111,7 +119,6 @@ export function commandeToProformaDocument(
     amountDue: Number(commande.montant_ttc),
     notes: INTERNAL_DISCLAIMER,
     qrContent: commande.numero_proforma ?? undefined,
-    footerOverride: COMMANDE_DOCUMENT_FOOTER,
   };
 }
 
@@ -128,10 +135,7 @@ export function commandeToFactureDocument(
     productName?: (id: number) => string;
   } = {},
 ): DocumentPrintData {
-  const organization: PrintOrganization = {
-    name: "AN-NOUR — Direction Générale",
-    logo: "/logoGroup.jpeg",
-  };
+  const organization = DIRECTION_GENERALE;
 
   const customer: PrintCustomer | undefined = opts.destinationStore
     ? { name: opts.destinationStore.name, address: opts.destinationStore.address ?? undefined }
@@ -166,7 +170,6 @@ export function commandeToFactureDocument(
     amountDue: Number(commande.montant_ttc),
     notes: INTERNAL_DISCLAIMER,
     qrContent: commande.numero_facture ?? undefined,
-    footerOverride: COMMANDE_DOCUMENT_FOOTER,
   };
 }
 
@@ -184,10 +187,7 @@ export function commandeToBonLivraisonDocument(
   } = {},
 ): DocumentPrintData {
   const livraison = commande.livraison;
-  const organization: PrintOrganization = {
-    name: "AN-NOUR — Direction Générale",
-    logo: "/logoGroup.jpeg",
-  };
+  const organization = DIRECTION_GENERALE;
 
   const customer: PrintCustomer | undefined = opts.destinationStore
     ? { name: opts.destinationStore.name, address: opts.destinationStore.address ?? undefined }
@@ -216,7 +216,6 @@ export function commandeToBonLivraisonDocument(
     amountDue: 0,
     notes: INTERNAL_DISCLAIMER,
     qrContent: livraison?.qr_content ?? livraison?.numero_bon_livraison ?? undefined,
-    footerOverride: COMMANDE_DOCUMENT_FOOTER,
     logistics: livraison
       ? {
           transporteur: livraison.transporteur ?? undefined,

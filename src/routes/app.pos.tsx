@@ -30,7 +30,7 @@ import {
   NO_DISCOUNT, DEFAULT_TAX,
 } from "@/lib/pos-cart";
 import { PrintPreviewDialog } from "@/lib/print-engine";
-import { saleToDocument, cartToInvoiceDocument } from "@/lib/pos-print-adapter";
+import { saleToDocument, saleToProformaDocument } from "@/lib/pos-print-adapter";
 import {
   type PaymentMethod, type PaymentLine,
   PAYMENT_METHOD_CONFIG, PAYMENT_METHOD_LABEL, getMethodConfig, computeChange, sumPaid, toApiPayments,
@@ -38,7 +38,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
-import type { ClientRead, VenteCreate, VenteRead } from "@/lib/types";
+import type { ClientRead, VenteCreate, VenteProformaCreate, VenteRead } from "@/lib/types";
 
 export const Route = createFileRoute("/app/pos")({ component: POS });
 
@@ -181,9 +181,12 @@ function POS() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedSale, setCompletedSale] = useState<VenteRead | null>(null);
   const [ticketClientName, setTicketClientName] = useState<string | null>(null);
-  // "Générer la facture" — a pre-sale preview/print of the cart, distinct
-  // from the post-encaissement sale_receipt (nothing is persisted here).
-  const [invoicePreviewOpen, setInvoicePreviewOpen] = useState(false);
+  // "Émettre une proforma" (cahier des charges §9.1) — a real, persisted,
+  // numbered devis (VenteService.create_proforma), distinct from the
+  // post-encaissement sale_receipt. No stock/payment impact until someone
+  // later transforms it into a facture (see app.sales.$id.tsx).
+  const [isEmittingProforma, setIsEmittingProforma] = useState(false);
+  const [completedProforma, setCompletedProforma] = useState<VenteRead | null>(null);
 
   // ── Payment + client — built up via the generic payment engine
   // (lib/payment-engine.ts). Nothing here is sent until "Valider"; the
@@ -590,6 +593,45 @@ function POS() {
     }
   };
 
+  // "Émettre une proforma" (§9.1) — same cart → lignes mapping as confirmSale,
+  // no payments, no client/credit requirement. Clears the cart on success
+  // exactly like a completed sale: from here on, the devis lives in the
+  // Sales list, not in this page's local state.
+  const confirmProforma = async () => {
+    if (isEmittingProforma || cartItems.length === 0) return;
+    setIsEmittingProforma(true);
+    try {
+      const payload: VenteProformaCreate = {
+        boutique_id: store!.id,
+        client_id: selectedClient?.id,
+        remise: totals.globalDiscount,
+        lignes: cartItems.map(({ line }) => ({
+          produit_id: line.productId,
+          quantite: line.quantity,
+          prix_unitaire: line.unitPrice,
+          remise: discountAmount(lineGrossAmount(line), line.discount),
+        })),
+      };
+      const proforma = await ventesApi.createProforma(payload);
+      await qc.invalidateQueries({ queryKey: ["ventes"] });
+
+      setTicketClientName(
+        selectedClient ? `${selectedClient.name}${selectedClient.prenom ? ` ${selectedClient.prenom}` : ""}` : null,
+      );
+      clearCart();
+      setGlobalDiscount(NO_DISCOUNT);
+      setCartOpen(false);
+      setCompletedProforma(proforma);
+      toast.success(t("pos.proformaIssued") as string, { description: proforma.numero_proforma ?? undefined });
+    } catch (err) {
+      const message =
+        err instanceof ApiError ? err.detail : err instanceof Error ? err.message : "Erreur";
+      toast.error(message);
+    } finally {
+      setIsEmittingProforma(false);
+    }
+  };
+
   const cartPanel = (
     <div className="flex h-full min-h-0 flex-col bg-background">
       <div className="border-b px-4 py-3 pr-12 sm:px-5 sm:py-3.5">
@@ -732,9 +774,10 @@ function POS() {
         </div>
       )}
       <div className="px-4 pb-2 sm:px-5">
-        <Button variant="outline" size="sm" className="w-full gap-2" disabled={cartItems.length === 0}
-          onClick={() => setInvoicePreviewOpen(true)}>
-          <FileText className="h-3.5 w-3.5" /> {t("pos.generateInvoice") as string}
+        <Button variant="outline" size="sm" className="w-full gap-2" disabled={cartItems.length === 0 || isEmittingProforma}
+          onClick={confirmProforma}>
+          {isEmittingProforma ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
+          {t("pos.generateInvoice") as string}
         </Button>
       </div>
       <div className="px-4 pb-5 sm:px-5">
@@ -1184,16 +1227,17 @@ function POS() {
       />
 
       <PrintPreviewDialog
-        open={invoicePreviewOpen}
-        document={invoicePreviewOpen
-          ? cartToInvoiceDocument(cartItems.map((i) => i.line), totals, {
+        open={!!completedProforma}
+        document={completedProforma
+          ? saleToProformaDocument(completedProforma, {
               store,
               vendeurName: user ? `${user.firstname} ${user.lastname}` : undefined,
-              client: selectedClient,
+              clientName: ticketClientName,
+              productName: (id) => productById[id]?.name ?? `#${id}`,
             })
           : null}
         showSuccess
-        onClose={() => setInvoicePreviewOpen(false)}
+        onClose={() => setCompletedProforma(null)}
       />
 
       {/* ── Sélection client obligatoire avant mise en attente ──────────── */}

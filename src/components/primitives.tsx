@@ -14,14 +14,22 @@ export function FieldError({ children }: { children?: ReactNode }) {
   return <p className="mt-1 text-xs text-destructive">{children}</p>;
 }
 
-export function PasswordInput({ className, error, ...props }: ComponentProps<"input"> & { error?: ReactNode }) {
+export function PasswordInput({
+  className,
+  error,
+  ...props
+}: ComponentProps<"input"> & { error?: ReactNode }) {
   const [visible, setVisible] = useState(false);
   return (
     <div>
       <div className="relative">
         <Input
           type={visible ? "text" : "password"}
-          className={cn("pr-10", error && "border-destructive focus-visible:ring-destructive", className)}
+          className={cn(
+            "pr-10",
+            error && "border-destructive focus-visible:ring-destructive",
+            className,
+          )}
           {...props}
         />
         <button
@@ -40,7 +48,13 @@ export function PasswordInput({ className, error, ...props }: ComponentProps<"in
 }
 
 export function KpiCard({
-  label, value, delta, icon, tone = "default", hint, valueClassName,
+  label,
+  value,
+  delta,
+  icon,
+  tone = "default",
+  hint,
+  valueClassName,
 }: {
   label: string;
   value: ReactNode;
@@ -59,14 +73,15 @@ export function KpiCard({
   // the number mid-digit instead of wrapping at a natural boundary. Swap in
   // a regular breakable space here only — table cells elsewhere still want
   // the non-breaking version.
-  const displayValue =
-    typeof value === "string" ? value.replace(/[\u00A0\u202F]/g, " ") : value;
+  const displayValue = typeof value === "string" ? value.replace(/[\u00A0\u202F]/g, " ") : value;
   return (
     <Card className="group relative overflow-hidden p-5 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-elevated">
       <div className="pointer-events-none absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+          <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+            {label}
+          </p>
           <p
             className={cn(
               "mt-2 break-words font-semibold leading-tight tracking-tight tabular-nums",
@@ -79,11 +94,17 @@ export function KpiCard({
           {(delta !== undefined || hint) && (
             <div className="mt-2 flex items-center gap-1.5 text-xs">
               {delta !== undefined && (
-                <span className={cn(
-                  "inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 font-semibold tabular-nums",
-                  up ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
-                )}>
-                  {up ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 font-semibold tabular-nums",
+                    up ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive",
+                  )}
+                >
+                  {up ? (
+                    <ArrowUpRight className="h-3 w-3" />
+                  ) : (
+                    <ArrowDownRight className="h-3 w-3" />
+                  )}
                   {Math.abs(delta).toFixed(1)}%
                 </span>
               )}
@@ -92,14 +113,16 @@ export function KpiCard({
           )}
         </div>
         {icon && (
-          <div className={cn(
-            "grid h-10 w-10 shrink-0 place-items-center rounded-xl ring-1 ring-inset",
-            tone === "primary" && "bg-primary/10 text-primary ring-primary/20",
-            tone === "success" && "bg-success/10 text-success ring-success/20",
-            tone === "warning" && "bg-warning/15 text-warning-foreground ring-warning/30",
-            tone === "destructive" && "bg-destructive/10 text-destructive ring-destructive/20",
-            tone === "default" && "bg-secondary text-foreground ring-border",
-          )}>
+          <div
+            className={cn(
+              "grid h-10 w-10 shrink-0 place-items-center rounded-xl ring-1 ring-inset",
+              tone === "primary" && "bg-primary/10 text-primary ring-primary/20",
+              tone === "success" && "bg-success/10 text-success ring-success/20",
+              tone === "warning" && "bg-warning/15 text-warning-foreground ring-warning/30",
+              tone === "destructive" && "bg-destructive/10 text-destructive ring-destructive/20",
+              tone === "default" && "bg-secondary text-foreground ring-border",
+            )}
+          >
             {icon}
           </div>
         )}
@@ -126,6 +149,7 @@ const BACKEND_STATUS_ALIAS: Record<string, string> = {
   partiellement_recu: "partial",
   annulee: "cancelled",
   // VenteStatut
+  proforma_expiree: "expired",
   en_cours: "held",
   completee: "completed",
   partiellement_payee: "partial",
@@ -134,10 +158,11 @@ const BACKEND_STATUS_ALIAS: Record<string, string> = {
   // CreanceStatut
   soldee: "paid",
   en_retard: "overdue",
-  // PurchaseStatut
-  commandee: "sent",
-  partiellement_recue: "partial",
-  recue: "received",
+  // TransfertStatut
+  en_transit: "shipped",
+  receptionne: "received",
+  receptionne_avec_ecart: "partial",
+  annule: "cancelled",
 };
 
 export function StatusBadge({ status }: { status: string }) {
@@ -183,10 +208,12 @@ export function StatusBadge({ status }: { status: string }) {
   const tKey = i18nOverride[canonical] ?? `status.${canonical}`;
 
   return (
-    <span className={cn(
-      "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset",
-      colorMap[canonical] ?? "bg-muted text-muted-foreground ring-border",
-    )}>
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset",
+        colorMap[canonical] ?? "bg-muted text-muted-foreground ring-border",
+      )}
+    >
       <span className="h-1.5 w-1.5 rounded-full bg-current" />
       {t(tKey)}
     </span>
@@ -217,15 +244,8 @@ export function TableSkeleton({ cols, rows = 7 }: { cols: number; rows?: number 
   );
 }
 
-export function ApiErrorState({
-  error,
-  onRetry,
-}: {
-  error: unknown;
-  onRetry?: () => void;
-}) {
-  const msg =
-    error instanceof Error ? error.message : "Une erreur inattendue est survenue.";
+export function ApiErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
+  const msg = error instanceof Error ? error.message : "Une erreur inattendue est survenue.";
   return (
     <div className="flex flex-col items-center gap-3 py-16 text-center">
       <AlertCircle className="h-10 w-10 text-destructive/60" />
@@ -240,8 +260,16 @@ export function ApiErrorState({
 }
 
 export function EmptyState({
-  icon, title, description, action,
-}: { icon: ReactNode; title: string; description?: string; action?: ReactNode }) {
+  icon,
+  title,
+  description,
+  action,
+}: {
+  icon: ReactNode;
+  title: string;
+  description?: string;
+  action?: ReactNode;
+}) {
   return (
     <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-secondary/30 px-6 py-16 text-center">
       <div className="grid h-12 w-12 place-items-center rounded-xl bg-background text-muted-foreground shadow-soft">
@@ -255,8 +283,18 @@ export function EmptyState({
 }
 
 export function SectionCard({
-  title, description, action, children, className,
-}: { title?: ReactNode; description?: ReactNode; action?: ReactNode; children: ReactNode; className?: string }) {
+  title,
+  description,
+  action,
+  children,
+  className,
+}: {
+  title?: ReactNode;
+  description?: ReactNode;
+  action?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
   return (
     <Card className={cn("overflow-hidden shadow-soft", className)}>
       {(title || description || action) && (

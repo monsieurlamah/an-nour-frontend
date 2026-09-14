@@ -1,14 +1,20 @@
-// Programmatic PDF generation using jsPDF (already in the project).
-// Draws each element with jsPDF primitives — produces real vector text,
-// not a screenshot. Each page format has its own draw function.
+// PDF generation using jsPDF (already in the project).
+//   • Thermal tickets are drawn with jsPDF primitives (vector text).
+//   • A4 documents are the *same* A4Template the preview and the browser
+//     print use, mounted off-screen and rasterised with html2canvas — so the
+//     downloaded PDF is pixel-identical to the approved letterhead design
+//     (Google fonts, swatch bars, bordered title block…) instead of a
+//     hand-drawn approximation that would drift from it.
 
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import { createElement } from "react";
+import { createRoot } from "react-dom/client";
 import type { DocumentPrintData, PrintConfig } from "./types";
 import { fmtMoney, fmtDateTime, truncate } from "./formatters";
 import { generateQRDataURL } from "./qr";
 import { loadImageForPdf } from "./image";
-import { TYPE_LABEL, isCommandeDocument, isDeliveryNoteType } from "./constants";
+import { TYPE_LABEL, isCommandeDocument, isDeliveryNoteType, PRINT_FONTS_URL } from "./constants";
+import { A4Template } from "./templates/A4Template";
 
 const FONT = "helvetica";
 const MONO = "courier";
@@ -179,225 +185,129 @@ async function drawThermal(doc: jsPDF, data: DocumentPrintData, cfg: PrintConfig
   y += 2;
 }
 
-// ── A4 invoice ───────────────────────────────────────────────────────────────
+// ── A4 document — rasterised from the shared A4Template ──────────────────────
+
+const A4_W_MM = 210;
+const A4_H_MM = 297;
+
+function nextFrame(): Promise<void> {
+  return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+}
+
+async function waitForImages(root: HTMLElement): Promise<void> {
+  const imgs = Array.from(root.querySelectorAll("img"));
+  await Promise.all(
+    imgs.map(
+      (img) =>
+        new Promise<void>((resolve) => {
+          if (img.complete) return resolve();
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+        }),
+    ),
+  );
+}
+
+/** Waits for an iframe's own document to finish loading — `<iframe>.onload`
+ * fires once for the initial `about:blank`, so a `readyState` poll after
+ * `document.write()` is the only reliable signal for content written via
+ * `iframeDoc.write()`. */
+function waitForIframeReady(iframeDoc: Document): Promise<void> {
+  if (iframeDoc.readyState === "complete") return Promise.resolve();
+  return new Promise((resolve) => {
+    const check = () => {
+      if (iframeDoc.readyState === "complete") resolve();
+      else setTimeout(check, 30);
+    };
+    check();
+  });
+}
 
 async function drawA4(doc: jsPDF, data: DocumentPrintData, cfg: PrintConfig): Promise<void> {
-  const currency = cfg.currency ?? "GNF";
-  const locale = cfg.locale ?? "fr-GN";
-  const pW = 210; // mm
-  const margin = 15;
-  const contentW = pW - margin * 2;
-  let y = margin;
+  if (typeof document === "undefined") throw new Error("La génération PDF A4 nécessite un navigateur.");
 
-  // Header stripe
-  doc.setFillColor(30, 41, 59); // dark slate
-  doc.rect(0, 0, pW, 35, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(20);
-  doc.setFont(FONT, "bold");
-  doc.text(data.organization.name, margin, 15);
-  doc.setFontSize(9);
-  doc.setFont(FONT, "normal");
-  let orgY = 22;
-  if (data.organization.address) { doc.text(data.organization.address, margin, orgY); orgY += 5; }
-  if (data.organization.phone) doc.text(`Tél: ${data.organization.phone}`, margin, orgY);
-  if (data.organization.nif) doc.text(`NIF: ${data.organization.nif}`, pW / 2, 22);
+  const qrDataUrl = data.qrContent
+    ? await generateQRDataURL(data.qrContent).catch(() => undefined)
+    : undefined;
 
-  // Logo (top right)
-  if (cfg.showLogo && data.organization.logo) {
-    try {
-      const logo = await loadImageForPdf(data.organization.logo);
-      if (logo) doc.addImage(logo.dataUrl, logo.format, pW - margin - 25, 5, 22, 22);
-    } catch { /* skip */ }
+  // html2canvas (1.4.1, unmaintained) clones the ENTIRE document that owns
+  // the target element — including every <style>/<link> in <head> — and its
+  // color parser predates CSS Color 4, so it throws the moment it meets one
+  // of the app's Tailwind v4 `oklch(...)` tokens, even on an ancestor the
+  // sheet itself never touches. The fix used everywhere else in this file
+  // for the exact same reason (browser print, see print.ts) is to render
+  // into an ISOLATED iframe that only ever sees this component's own inline
+  // styles + the two Google Fonts — never the app's stylesheet.
+  const iframe = document.createElement("iframe");
+  iframe.style.cssText = "position:fixed;left:-10000px;top:0;width:210mm;height:297mm;border:none;opacity:0;pointer-events:none;";
+  document.body.appendChild(iframe);
+  const iframeDoc = iframe.contentDocument ?? iframe.contentWindow?.document;
+  if (!iframeDoc) {
+    iframe.remove();
+    throw new Error("Impossible de préparer le document A4.");
   }
+  iframeDoc.open();
+  iframeDoc.write(
+    `<!DOCTYPE html><html><head><meta charset="utf-8">` +
+      `<link rel="preconnect" href="https://fonts.googleapis.com">` +
+      `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>` +
+      `<link rel="stylesheet" href="${PRINT_FONTS_URL}">` +
+      `<style>*{box-sizing:border-box;}html,body{margin:0;padding:0;background:#fff;}` +
+      `img{max-width:100%;height:auto;}table{border-collapse:collapse;width:100%;}</style>` +
+      `</head><body></body></html>`,
+  );
+  iframeDoc.close();
+  await waitForIframeReady(iframeDoc);
 
-  doc.setTextColor(0, 0, 0);
-  y = 45;
+  const root = createRoot(iframeDoc.body);
 
-  if (data.deliveryNotice) {
-    doc.setFillColor(255, 251, 235);
-    doc.setDrawColor(253, 230, 138);
-    doc.rect(margin, y - 6, contentW, 10, "FD");
-    doc.setFontSize(10);
-    doc.setFont(FONT, "bold");
-    doc.setTextColor(146, 64, 14);
-    doc.text(data.deliveryNotice, pW / 2, y, { align: "center" });
-    doc.setTextColor(0, 0, 0);
-    y += 12;
-  }
+  try {
+    root.render(createElement(A4Template, { data, config: { ...cfg, format: "a4" }, qrDataUrl }));
+    await nextFrame();
+    const fonts = (iframeDoc as Document & { fonts?: { ready: Promise<unknown> } }).fonts;
+    if (fonts?.ready) await fonts.ready;
+    await waitForImages(iframeDoc.body);
+    await nextFrame();
 
-  // Document title + reference
-  doc.setFontSize(16);
-  doc.setFont(FONT, "bold");
-  doc.text(TYPE_LABEL[data.type] ?? "DOCUMENT", margin, y);
-  doc.setFontSize(10);
-  doc.setFont(FONT, "normal");
-  doc.text(`Référence: ${data.reference}`, pW - margin - 60, y);
-  y += 6;
-  doc.text(`Date: ${fmtDateTime(data.createdAt, locale)}`, pW - margin - 60, y);
-  y += 6;
+    const sheet = iframeDoc.body.firstElementChild as HTMLElement | null;
+    if (!sheet) throw new Error("Impossible de préparer le document A4.");
 
-  if (data.notes) {
-    doc.setFontSize(7.5);
-    doc.setFont(FONT, "italic");
-    doc.setTextColor(148, 163, 184);
-    doc.text(data.notes, margin, y);
-    doc.setTextColor(0, 0, 0);
-    y += 6;
-  }
-  y += 4;
-
-  // Customer + Issuer info boxes
-  if (data.customer) {
-    doc.setFillColor(248, 250, 252);
-    doc.rect(margin, y, contentW / 2 - 5, 28, "F");
-    doc.setFontSize(9);
-    doc.setFont(FONT, "bold");
-    doc.text("CLIENT", margin + 3, y + 6);
-    doc.setFont(FONT, "normal");
-    let cy = y + 12;
-    doc.text(data.customer.name, margin + 3, cy); cy += 5;
-    if (data.customer.phone) { doc.text(data.customer.phone, margin + 3, cy); cy += 5; }
-    if (data.customer.address) doc.text(data.customer.address, margin + 3, cy);
-  }
-  if (data.issuer) {
-    const sx = margin + contentW / 2 + 5;
-    doc.setFillColor(248, 250, 252);
-    doc.rect(sx, y, contentW / 2 - 5, 28, "F");
-    doc.setFontSize(9);
-    doc.setFont(FONT, "bold");
-    doc.text("VENDEUR", sx + 3, y + 6);
-    doc.setFont(FONT, "normal");
-    doc.text(data.issuer.name, sx + 3, y + 12);
-    if (data.issuer.role) doc.text(data.issuer.role, sx + 3, y + 17);
-  }
-  if (data.logistics) {
-    const sx = margin + contentW / 2 + 5;
-    doc.setFillColor(248, 250, 252);
-    doc.rect(sx, y, contentW / 2 - 5, 28, "F");
-    doc.setFontSize(9);
-    doc.setFont(FONT, "bold");
-    doc.text("EXPÉDITION", sx + 3, y + 6);
-    doc.setFont(FONT, "normal");
-    let ly = y + 12;
-    if (data.logistics.transporteur) { doc.text(`Transporteur: ${data.logistics.transporteur}`, sx + 3, ly); ly += 5; }
-    if (data.logistics.livreurNom) { doc.text(`Livreur: ${data.logistics.livreurNom}`, sx + 3, ly); ly += 5; }
-    if (data.logistics.dateExpedition) doc.text(`Expédié le: ${fmtDateTime(data.logistics.dateExpedition, locale)}`, sx + 3, ly);
-  }
-  y += 35;
-
-  const isDeliveryNote = isDeliveryNoteType(data.type);
-
-  // Product table — a bon de livraison only needs Article + Qté.
-  autoTable(doc, {
-    startY: y,
-    head: isDeliveryNote ? [["Article", "Qté"]] : [["Article", "Qté", "Prix unitaire", "Remise", "Total"]],
-    body: data.lines.map((l) =>
-      isDeliveryNote
-        ? [l.name, String(l.quantity)]
-        : [
-            l.name,
-            String(l.quantity),
-            fmtMoney(l.unitPrice, currency, locale),
-            l.lineDiscount && l.lineDiscount > 0 ? `-${fmtMoney(l.lineDiscount, currency, locale)}` : "",
-            fmtMoney(l.lineTotal, currency, locale),
-          ],
-    ),
-    styles: { fontSize: 9, font: FONT },
-    headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: "bold" },
-    alternateRowStyles: { fillColor: [248, 250, 252] },
-    columnStyles: isDeliveryNote
-      ? { 0: { cellWidth: "auto" }, 1: { halign: "center", cellWidth: 20 } }
-      : {
-          0: { cellWidth: "auto" },
-          1: { halign: "center", cellWidth: 13 },
-          2: { halign: "right", cellWidth: 34 },
-          3: { halign: "right", cellWidth: 20 },
-          4: { halign: "right", cellWidth: 40 },
-        },
-    margin: { left: margin, right: margin },
-  });
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  y = (doc as any).lastAutoTable.finalY + 8;
-
-  if (!isDeliveryNote) {
-    // Totals block (right-aligned)
-    const totalsX = pW - margin - 70;
-    const totalsW = 70;
-    doc.setFillColor(248, 250, 252);
-    doc.rect(totalsX, y, totalsW, 32, "F");
-    let ty = y + 7;
-    const totRow = (label: string, val: string, bold = false) => {
-      doc.setFontSize(9);
-      doc.setFont(FONT, bold ? "bold" : "normal");
-      doc.text(label, totalsX + 3, ty);
-      const vw = (doc.getStringUnitWidth(val) * 9) / doc.internal.scaleFactor;
-      doc.text(val, totalsX + totalsW - 3 - vw, ty);
-      ty += 5;
-    };
-    const t = data.totals;
-    if (t.globalDiscount && t.globalDiscount > 0) totRow("Remise", `-${fmtMoney(t.globalDiscount, currency, locale)}`);
-    if (t.tax && t.tax > 0) totRow(`Taxe (${t.taxRate}%)`, fmtMoney(t.tax, currency, locale));
-    totRow("TOTAL", fmtMoney(t.total, currency, locale), true);
-    y += 40;
-
-    // Payments — omitted for internal commande documents (bon de commande /
-    // proforma / facture): no real payment is ever recorded against them.
-    if (!isCommandeDocument(data.type)) {
-      doc.setFontSize(10);
-      doc.setFont(FONT, "bold");
-      doc.text("Paiements", margin, y);
-      y += 6;
-      for (const p of data.payments) {
-        doc.setFontSize(9);
-        doc.setFont(FONT, "normal");
-        const txt = p.reference ? `${p.method} (${p.reference})` : p.method;
-        doc.text(txt, margin, y);
-        doc.text(fmtMoney(p.amount, currency, locale), pW - margin, y, { align: "right" });
-        y += 5;
-      }
-      if (data.amountDue > 0) {
-        doc.setFont(FONT, "bold");
-        doc.setTextColor(220, 38, 38);
-        doc.text("Montant restant (créance)", margin, y);
-        doc.text(fmtMoney(data.amountDue, currency, locale), pW - margin, y, { align: "right" });
-        doc.setTextColor(0, 0, 0);
-        y += 5;
-      }
-      y += 8;
-    }
-  }
-
-  // QR Code
-  if (data.qrContent) {
-    try {
-      const qrUrl = await generateQRDataURL(data.qrContent);
-      doc.addImage(qrUrl, "PNG", margin, y, 28, 28);
-      doc.setFontSize(7);
-      doc.text(data.qrContent, margin, y + 31);
-      y += 35;
-    } catch { /* skip */ }
-  }
-
-  // Footer — pinned near the bottom of the page like a letterhead: first
-  // line bold (identity), the rest smaller (contact/activities), separated
-  // from the body by a thin rule.
-  const footerLines = (data.footerOverride ?? cfg.footerMessage ?? "").split("\n").filter(Boolean);
-  if (footerLines.length > 0) {
-    let fy = Math.max(y, 262);
-    doc.setDrawColor(226, 232, 240);
-    doc.line(margin, fy, pW - margin, fy);
-    fy += 6;
-    footerLines.forEach((line, i) => {
-      doc.setFontSize(i === 0 ? 11 : i === 1 ? 9 : 8);
-      doc.setFont(FONT, i === 0 ? "bold" : "normal");
-      doc.setTextColor(i <= 1 ? 30 : 148, i <= 1 ? 41 : 163, i <= 1 ? 59 : 184);
-      const lines = doc.splitTextToSize(line, contentW);
-      doc.text(lines, pW / 2, fy, { align: "center" });
-      fy += 4.5 * (Array.isArray(lines) ? lines.length : 1);
+    const { default: html2canvas } = await import("html2canvas");
+    const canvas = await html2canvas(sheet, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: "#ffffff",
+      logging: false,
+      windowWidth: sheet.scrollWidth,
     });
-    doc.setTextColor(0, 0, 0);
+
+    // Slice the tall bitmap into A4 pages (almost always a single page — the
+    // sheet is min-height 297mm — but a very long line list may overflow).
+    const pxPerMm = canvas.width / A4_W_MM;
+    const pageHpx = Math.floor(A4_H_MM * pxPerMm);
+    let offset = 0;
+    let first = true;
+    while (offset < canvas.height) {
+      const sliceH = Math.min(pageHpx, canvas.height - offset);
+      // Ignore a sub-2mm sliver left over by rounding.
+      if (!first && sliceH < 2 * pxPerMm) break;
+      const slice = document.createElement("canvas");
+      slice.width = canvas.width;
+      slice.height = sliceH;
+      const ctx = slice.getContext("2d");
+      if (!ctx) break;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, slice.width, slice.height);
+      ctx.drawImage(canvas, 0, offset, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+      if (!first) doc.addPage();
+      doc.addImage(slice.toDataURL("image/jpeg", 0.95), "JPEG", 0, 0, A4_W_MM, sliceH / pxPerMm);
+      first = false;
+      offset += sliceH;
+    }
+  } finally {
+    root.unmount();
+    iframe.remove();
   }
 }
 

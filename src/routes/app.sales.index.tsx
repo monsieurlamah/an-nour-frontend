@@ -79,6 +79,9 @@ function getPresetDates(preset: DatePreset): { debut: string; fin: string } {
 // ── Status badge ──────────────────────────────────────────────────────────────
 
 const STATUT_CONFIG: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; color: string }> = {
+  proforma:           { label: "Proforma",             variant: "secondary",   color: "bg-info/10 text-info border-info/30" },
+  proforma_expiree:   { label: "Proforma expirée",     variant: "outline",     color: "bg-muted text-muted-foreground" },
+  proforma_rejetee:   { label: "Proforma rejetée",     variant: "destructive", color: "bg-destructive/10 text-destructive border-destructive/30" },
   completee:          { label: "Payée",               variant: "default",     color: "bg-success/10 text-success border-success/30" },
   partiellement_payee:{ label: "Partielle",           variant: "secondary",   color: "bg-warning/10 text-warning border-warning/30" },
   impayee:            { label: "Non payée",           variant: "outline",     color: "bg-muted text-muted-foreground" },

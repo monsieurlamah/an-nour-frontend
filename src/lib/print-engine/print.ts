@@ -3,6 +3,7 @@
 // The caller passes a pre-rendered HTML string + the appropriate CSS.
 
 import type { PageFormat } from "./types";
+import { PRINT_FONTS_URL } from "./constants";
 
 function getPageCSS(format: PageFormat): string {
   if (format === "thermal-58") {
@@ -11,24 +12,26 @@ function getPageCSS(format: PageFormat): string {
   if (format === "thermal-80") {
     return `@page { size: 80mm auto; margin: 0; } body { width: 80mm; }`;
   }
-  return `@page { size: A4; margin: 15mm; }`;
+  // The A4 sheet carries its own paper colour, padding and letterhead, so
+  // the page itself has no margin — the sheet IS the page.
+  return `@page { size: A4; margin: 0; } body { width: 210mm; } .print-a4 { page-break-after: always; }`;
 }
 
 function getBaseCSS(format: PageFormat): string {
   const isTherm = format !== "a4";
   return `
     * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    html, body { background: #fff; }
     body {
       margin: 0; padding: 0;
-      font-family: ${isTherm ? "'Courier New', Courier, monospace" : "'Helvetica Neue', Arial, sans-serif"};
+      font-family: ${isTherm ? "'Courier New', Courier, monospace" : "'Inter', 'Helvetica Neue', Arial, sans-serif"};
       font-size: ${isTherm ? "10px" : "12px"};
       line-height: 1.4;
       color: #000;
-      background: #fff;
     }
     img { max-width: 100%; height: auto; }
     table { border-collapse: collapse; width: 100%; }
-    td, th { padding: 2px 4px; }
+    ${isTherm ? "td, th { padding: 2px 4px; }" : ""}
   `;
 }
 
@@ -45,11 +48,19 @@ export function printHtml(htmlContent: string, format: PageFormat = "thermal-80"
     return;
   }
 
+  const fontLinks =
+    format === "a4"
+      ? `<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="${PRINT_FONTS_URL}">`
+      : "";
+
   iframeDoc.open();
   iframeDoc.write(`<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
+${fontLinks}
 <style>
 ${getPageCSS(format)}
 ${getBaseCSS(format)}
@@ -62,11 +73,17 @@ ${htmlContent}
   iframeDoc.close();
 
   // Give images / fonts a moment to load before printing.
-  iframe.onload = () => {
-    setTimeout(() => {
-      iframe.contentWindow?.print();
-      // Clean up after the dialog is dismissed (delay to avoid premature removal).
-      setTimeout(() => iframe.remove(), 2000);
-    }, 300);
+  const fire = () => {
+    const fonts = (iframeDoc as Document & { fonts?: { ready: Promise<unknown> } }).fonts;
+    const ready = fonts?.ready ?? Promise.resolve();
+    ready.then(() => {
+      setTimeout(() => {
+        iframe.contentWindow?.print();
+        // Clean up after the dialog is dismissed (delay to avoid premature removal).
+        setTimeout(() => iframe.remove(), 2000);
+      }, 400);
+    });
   };
+  if (iframeDoc.readyState === "complete") fire();
+  else iframe.onload = fire;
 }

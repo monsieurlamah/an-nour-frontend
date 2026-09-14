@@ -77,8 +77,12 @@ export interface StoreRead extends EntityRead {
   logo: string | null;
   address: string | null;
   city: string | null;
+  phone: string | null;
   timezone: string;
   devise: string;
+  /** Cahier des charges §6.1/§9.2 — taux de remise max autorisé pour les
+   * gérants de cette boutique. null = pas de plafond configuré. */
+  remise_max_percent: number | null;
   gerant_id: number | null;
   category_store_id: number | null;
   created_by: number | null;
@@ -92,8 +96,10 @@ export interface StoreCreate {
   logo?: string;
   address?: string;
   city?: string;
+  phone?: string;
   timezone?: string;
   devise?: string;
+  remise_max_percent?: number | null;
   gerant_id?: number;
   category_store_id?: number;
 }
@@ -400,6 +406,10 @@ export interface CommandeReceptionCreate {
 
 export type VenteType = "directe" | "credit";
 export type VenteStatut =
+  // Devis (cahier des charges §9.1-§9.3) — no stock/payment impact yet.
+  | "proforma"
+  | "proforma_expiree"
+  | "proforma_rejetee"
   | "en_cours"
   | "completee"
   | "partiellement_payee"
@@ -437,6 +447,14 @@ export interface VenteRead extends EntityRead {
   montant_paye: number;
   /** Computed by the backend — montant_total - montant_paye, floored at 0. */
   montant_restant: number;
+  numero_proforma: string | null;
+  numero_facture: string | null;
+  proforma_valide_jusquau: string | null;
+  proforma_refus_motif: string | null;
+  proforma_refused_by: number | null;
+  proforma_refused_at: string | null;
+  facture_by: number | null;
+  facture_at: string | null;
   livraison_statut: VenteLivraisonStatut;
   numero_bon_livraison: string | null;
   livree_at: string | null;
@@ -473,6 +491,37 @@ export interface VenteCreate {
   lignes: VenteLigneCreate[];
   paiements: VentePaiementCreate[];
   /** Defaults to "livre" (goods leave right away) server-side if omitted. */
+  livraison_statut?: VenteLivraisonStatut;
+}
+
+// ── Proforma (devis) — cahier des charges §9.1-§9.3 ─────────────────────────
+// A proforma never carries paiements: "la proforma n'impacte pas le stock"
+// (§9.1), and no payment is ever taken against a mere quote either.
+
+export interface VenteProformaCreate {
+  boutique_id: number;
+  client_id?: number;
+  remise?: number;
+  lignes: VenteLigneCreate[];
+  /** Validity window in days (§9.1) — defaults to 7 server-side. */
+  validite_jours?: number;
+}
+
+/** Re-price a still-open proforma after client negotiation (§9.2) —
+ * replaces the lines and/or the global remise wholesale. */
+export interface VenteProformaUpdate {
+  remise?: number;
+  lignes?: VenteLigneCreate[];
+}
+
+export interface VenteProformaReject {
+  motif: string;
+}
+
+/** Turns an open proforma into the facture définitive (§9.3). Payment is
+ * optional — an empty list just leaves the whole amount as a créance. */
+export interface VenteTransformRequest {
+  paiements: VentePaiementCreate[];
   livraison_statut?: VenteLivraisonStatut;
 }
 
@@ -531,19 +580,9 @@ export interface VenteRemboursementRead extends EntityRead {
 
 // ─── Créances ─────────────────────────────────────────────────────────────────
 
-export type CreanceStatut =
-  | "active"
-  | "partiellement_payee"
-  | "soldee"
-  | "en_retard"
-  | "annulee";
+export type CreanceStatut = "active" | "partiellement_payee" | "soldee" | "en_retard" | "annulee";
 
-export type PaiementMode =
-  | "especes"
-  | "mobile_money"
-  | "carte"
-  | "virement"
-  | "cheque";
+export type PaiementMode = "especes" | "mobile_money" | "carte" | "virement" | "cheque";
 
 export interface CreanceRead extends EntityRead {
   vente_id: number | null;
@@ -553,12 +592,24 @@ export interface CreanceRead extends EntityRead {
   montant_restant: number;
   date_echeance: string | null;
   statut: CreanceStatut;
+  derniere_relance_at: string | null;
+  nombre_relances: number;
   // Denormalized at read time — absent (undefined) when nested under
   // VenteRead.creance (that path never enriches), always present when read
   // from GET/POST/PATCH /creances directly.
   client_name?: string | null;
   client_phone?: string | null;
   store_name?: string | null;
+}
+
+export interface RelanceCreate {
+  moyen?: string;
+  notes?: string;
+}
+
+export interface AgedBalanceBucket {
+  tranche: "0-30" | "31-60" | "61-90" | "90+";
+  montant: number;
 }
 
 export interface CreanceCreate {
@@ -584,55 +635,6 @@ export interface PaiementCreate {
   reference?: string;
   vente_id?: number;
   creance_id?: number;
-}
-
-// ─── Achats / Suppliers ───────────────────────────────────────────────────────
-
-export type PurchaseStatut =
-  | "brouillon"
-  | "commandee"
-  | "partiellement_recue"
-  | "recue"
-  | "annulee";
-
-export interface SupplierRead extends EntityRead {
-  name: string;
-  phone: string | null;
-  email: string | null;
-  address: string | null;
-}
-
-export interface SupplierCreate {
-  name: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-}
-
-export interface SupplierUpdate extends Partial<SupplierCreate> {
-  status?: RecordStatus;
-}
-
-export interface PurchaseLineRead extends EntityRead {
-  purchase_id: number;
-  product_id: number;
-  quantity: number;
-  prix_unitaire: number;
-  total_ligne: number;
-}
-
-export interface PurchaseRead extends EntityRead {
-  supplier_id: number;
-  created_by: number | null;
-  montant_total: number;
-  statut: PurchaseStatut;
-  lignes: PurchaseLineRead[];
-}
-
-export interface PurchaseCreate {
-  supplier_id: number;
-  statut?: PurchaseStatut;
-  lignes: { product_id: number; quantity: number; prix_unitaire?: number }[];
 }
 
 // ─── Stock ────────────────────────────────────────────────────────────────────
@@ -700,6 +702,14 @@ export interface CashMovementRead {
   reference_type: string | null;
   reference_id: number | null;
   created_by: number | null;
+  cancelled_at: string | null;
+  cancelled_by: number | null;
+  cancel_reason: string | null;
+  reverses_movement_id: number | null;
+}
+
+export interface CashMovementCancel {
+  motif: string;
 }
 
 export interface StockLocationCreate {
@@ -805,13 +815,7 @@ export interface GroupPermissionRead extends EntityRead {
 
 // ─── Notifications ────────────────────────────────────────────────────────────
 
-export type NotificationType =
-  | "stock"
-  | "commande"
-  | "vente"
-  | "creance"
-  | "paiement"
-  | "systeme";
+export type NotificationType = "stock" | "commande" | "vente" | "creance" | "paiement" | "systeme";
 
 // A LogRead resource (append-only), not an EntityRead — no status/updated_at.
 export interface NotificationRead {
@@ -894,4 +898,79 @@ export interface SettingUpdate {
   value?: string;
   value_type?: SettingType;
   group_name?: string;
+}
+
+// ─── Activity log (journal d'activité — cahier des charges §14) ──────────────
+
+export interface ActivityLogRead {
+  id: number;
+  uuid: string;
+  created_at: string;
+  user_id: number | null;
+  action: string;
+  module: string | null;
+  reference_type: string | null;
+  reference_id: number | null;
+  boutique_id: number | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  user_name: string | null;
+}
+
+// ─── Transferts inter-boutiques (cahier des charges §7.4/§12) ────────────────
+
+export type TransfertStatut = "en_transit" | "receptionne" | "receptionne_avec_ecart" | "annule";
+
+export interface TransfertLigneRead extends EntityRead {
+  transfert_id: number;
+  produit_id: number;
+  quantite_envoyee: number;
+  quantite_recue: number;
+  observation: string | null;
+}
+
+export interface TransfertRead extends EntityRead {
+  boutique_source_id: number | null;
+  boutique_destination_id: number | null;
+  created_by: number | null;
+  receptionne_par: number | null;
+  annule_par: number | null;
+  numero: string;
+  statut: TransfertStatut;
+  motif: string | null;
+  annule_motif: string | null;
+  expedie_at: string | null;
+  receptionne_at: string | null;
+  annule_at: string | null;
+  lignes: TransfertLigneRead[];
+  boutique_source_name: string | null;
+  boutique_destination_name: string | null;
+}
+
+export interface TransfertLigneCreate {
+  produit_id: number;
+  quantite: number;
+}
+
+export interface TransfertCreate {
+  boutique_source_id?: number | null;
+  source_est_principale?: boolean;
+  boutique_destination_id?: number | null;
+  destination_est_principale?: boolean;
+  motif?: string;
+  lignes: TransfertLigneCreate[];
+}
+
+export interface TransfertReceptionLigne {
+  ligne_id: number;
+  quantite_recue: number;
+  observation?: string;
+}
+
+export interface TransfertReceive {
+  lignes: TransfertReceptionLigne[];
+}
+
+export interface TransfertCancel {
+  motif: string;
 }

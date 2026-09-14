@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiRequest, clearTokens, getAccessToken, setTokens } from "@/lib/api-client";
-import { getWorkspace, setWorkspace } from "@/lib/workspace";
+import { setWorkspace } from "@/lib/workspace";
 
 export type AuthUser = {
   id: number;
@@ -192,13 +192,6 @@ export async function fetchMe(): Promise<AuthUser> {
   user.is_super_admin = user.is_super_admin ?? false;
   currentUser = user;
   emit();
-
-  // Sanitise stale workspace on page reload: an HQ-capable user stuck on an
-  // empty-id supplier workspace (legacy artifact) is sent back to HQ.
-  const ws = getWorkspace();
-  if (canViewHQ(user) && ws.kind === "supplier" && !ws.id) {
-    setWorkspace({ kind: "hq" });
-  }
 
   return user;
 }

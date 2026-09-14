@@ -16,7 +16,6 @@ import {
   BarChart3,
   Settings,
   LifeBuoy,
-  Truck,
   Tag,
   Wallet,
   Search,
@@ -29,6 +28,8 @@ import {
   ChevronsRight,
   LogOut,
   Check,
+  ArrowLeftRight,
+  ScrollText,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -52,7 +53,10 @@ import { WorkspaceSwitcher } from "@/components/workspace-switcher";
 import { notificationsApi, qk } from "@/lib/api";
 import type { NotificationType, NotificationRead } from "@/lib/types";
 import {
-  hydrateWorkspaceFromStorage, getWorkspaceLabel, type Workspace, type WorkspaceKind,
+  hydrateWorkspaceFromStorage,
+  getWorkspaceLabel,
+  type Workspace,
+  type WorkspaceKind,
 } from "@/lib/workspace";
 import { useWorkContext, canViewHQ } from "@/lib/work-context";
 import { useAuth, hydrateAuth, GROUP_SLUG_LABEL } from "@/lib/auth";
@@ -102,10 +106,10 @@ const HQ_NAV: NavGroup[] = [
         requiredPermission: "commandes.view",
       },
       {
-        to: "/app/suppliers",
-        key: "nav.suppliers",
-        icon: Truck,
-        requiredPermission: "suppliers.view",
+        to: "/app/transfers",
+        key: "nav.transfers",
+        icon: ArrowLeftRight,
+        requiredPermission: "transferts.view",
       },
     ],
   },
@@ -146,7 +150,12 @@ const HQ_NAV: NavGroup[] = [
         requiredPermission: "clients.view",
       },
       { to: "/app/debts", key: "nav.debts", icon: CreditCard, requiredPermission: "creances.view" },
-      { to: "/app/expenses", key: "nav.expenses", icon: Wallet, requiredPermission: "expenses.view" },
+      {
+        to: "/app/expenses",
+        key: "nav.expenses",
+        icon: Wallet,
+        requiredPermission: "expenses.view",
+      },
     ],
   },
   {
@@ -157,6 +166,12 @@ const HQ_NAV: NavGroup[] = [
         key: "nav.notifications",
         icon: Bell,
         requiredPermission: "notifications.view",
+      },
+      {
+        to: "/app/logs",
+        key: "nav.logs",
+        icon: ScrollText,
+        requiredPermission: "logs.view",
       },
       {
         to: "/app/settings",
@@ -208,6 +223,12 @@ function buildStoreNav(storeId: string): NavGroup[] {
           requiredPermission: "commandes.view",
         },
         {
+          to: "/app/transfers",
+          key: "nav.transfers",
+          icon: ArrowLeftRight,
+          requiredPermission: "transferts.view",
+        },
+        {
           to: "/app/customers",
           key: "nav.customers",
           icon: UserRound,
@@ -241,6 +262,12 @@ function buildStoreNav(storeId: string): NavGroup[] {
           key: "nav.notifications",
           icon: Bell,
           requiredPermission: "notifications.view",
+        },
+        {
+          to: "/app/logs",
+          key: "nav.logs",
+          icon: ScrollText,
+          requiredPermission: "logs.view",
         },
         { to: "/app/help", key: "nav.help", icon: LifeBuoy, requiredPermission: null },
       ],
@@ -563,9 +590,7 @@ function ProfileMenu() {
     ? (t("workspace.banner.unassigned") as string)
     : workspace.kind === "hq"
       ? "HQ"
-      : workspace.kind === "store"
-        ? (t("workspace.banner.store") as string)
-        : (t("workspace.banner.supplier") as string);
+      : (t("workspace.banner.store") as string);
   const fullName = user ? `${user.firstname} ${user.lastname}`.trim() : "…";
   const initials = user
     ? `${user.firstname?.[0] ?? ""}${user.lastname?.[0] ?? ""}`.toUpperCase() || "?"
@@ -660,15 +685,13 @@ export function AppShell({ children }: { children: ReactNode }) {
         : workspace;
 
   const rawGroups: NavGroup[] =
-    effectiveWs.kind === "store" && effectiveWs.id
-      ? buildStoreNav(effectiveWs.id)
-      : HQ_NAV;
+    effectiveWs.kind === "store" && effectiveWs.id ? buildStoreNav(effectiveWs.id) : HQ_NAV;
   // RBAC: menus are now decided by the user's real permissions (super-admin bypasses).
   const navGroups = filterNavByPermission(rawGroups, has);
 
   const activeStore =
     effectiveWs.kind === "store"
-      ? authorizedStores.find((s) => String(s.id) === effectiveWs.id) ?? null
+      ? (authorizedStores.find((s) => String(s.id) === effectiveWs.id) ?? null)
       : null;
 
   const wsLabel = getWorkspaceLabel(effectiveWs, { store: activeStore });

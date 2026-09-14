@@ -7,17 +7,125 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CreditCard, Clock, TrendingDown, Search, CreditCard as DebtIcon } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  CreditCard,
+  Clock,
+  TrendingDown,
+  Search,
+  CreditCard as DebtIcon,
+  BellRing,
+  Printer,
+} from "lucide-react";
 import { creancesApi, qk } from "@/lib/api";
 import { fmtXAF } from "@/lib/mock-data";
 import { useT, formatDate } from "@/lib/i18n";
 import { useWorkContext, canViewHQ } from "@/lib/work-context";
 import { toast } from "sonner";
+import { PrintPreviewDialog, type DocumentPrintData } from "@/lib/print-engine";
+import { creancesToReleveDocument } from "@/lib/creance-print-adapter";
 import type { CreanceRead, PaiementMode } from "@/lib/types";
+
+function RelanceDialog({
+  creance,
+  open,
+  onClose,
+}: {
+  creance: CreanceRead;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const [moyen, setMoyen] = useState("Téléphone");
+  const [notes, setNotes] = useState("");
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      creancesApi.sendRelance(creance.id, { moyen, notes: notes.trim() || undefined }),
+    onSuccess: () => {
+      toast.success("Relance enregistrée");
+      qc.invalidateQueries({ queryKey: ["creances"] });
+      onClose();
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "Erreur"),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Envoyer une relance</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="rounded-lg bg-secondary/30 p-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">{creance.client_name}</span>
+              <span className="tabular-nums text-destructive">
+                {fmtXAF(Number(creance.montant_restant))}
+              </span>
+            </div>
+            {creance.nombre_relances > 0 && (
+              <div className="mt-1 text-xs text-muted-foreground">
+                {creance.nombre_relances} relance(s) déjà envoyée(s)
+                {creance.derniere_relance_at &&
+                  ` · dernière le ${formatDate(creance.derniere_relance_at, "fr")}`}
+              </div>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Label>Moyen utilisé</Label>
+            <Select value={moyen} onValueChange={setMoyen}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Téléphone">Téléphone</SelectItem>
+                <SelectItem value="En personne">En personne</SelectItem>
+                <SelectItem value="SMS / WhatsApp">SMS / WhatsApp</SelectItem>
+                <SelectItem value="Relevé imprimé remis">Relevé imprimé remis</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Notes (optionnel)</Label>
+            <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Annuler
+          </Button>
+          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
+            <BellRing className="mr-1.5 h-3.5 w-3.5" /> Enregistrer la relance
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export const Route = createFileRoute("/app/debts/")({ component: Page });
 
@@ -73,7 +181,9 @@ function RecordPaymentDialog({
             </div>
             <div className="mt-1 flex justify-between font-medium">
               <span>Reste dû</span>
-              <span className="tabular-nums text-destructive">{fmtXAF(Number(creance.montant_restant))}</span>
+              <span className="tabular-nums text-destructive">
+                {fmtXAF(Number(creance.montant_restant))}
+              </span>
             </div>
           </div>
           <div className="space-y-1.5">
@@ -103,16 +213,19 @@ function RecordPaymentDialog({
           </div>
           <div className="space-y-1.5">
             <Label>Référence (optionnel)</Label>
-            <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="N° transaction, chèque…" />
+            <Input
+              value={reference}
+              onChange={(e) => setReference(e.target.value)}
+              placeholder="N° transaction, chèque…"
+            />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>{t("common.cancel") as string}</Button>
-          <Button
-            onClick={() => mutation.mutate()}
-            disabled={mutation.isPending || !!amountError}
-          >
-            {mutation.isPending ? "…" : t("common.confirm") as string}
+          <Button variant="outline" onClick={onClose}>
+            {t("common.cancel") as string}
+          </Button>
+          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !!amountError}>
+            {mutation.isPending ? "…" : (t("common.confirm") as string)}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -127,10 +240,17 @@ function Page() {
   const [search, setSearch] = useState("");
   const [boutiqueId, setBoutiqueId] = useState<string>("all");
   const [selected, setSelected] = useState<CreanceRead | null>(null);
+  const [relanceTarget, setRelanceTarget] = useState<CreanceRead | null>(null);
+  const [releveDoc, setReleveDoc] = useState<DocumentPrintData | null>(null);
 
   const scopedBoutiqueId = isHQ && boutiqueId !== "all" ? Number(boutiqueId) : undefined;
 
-  const { data: creances = [], isLoading, error, refetch } = useQuery({
+  const {
+    data: creances = [],
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: qk.creances.list({ boutique_id: scopedBoutiqueId }),
     queryFn: () => creancesApi.list({ limit: 500, boutique_id: scopedBoutiqueId }),
   });
@@ -141,6 +261,17 @@ function Page() {
     const storeName = d.store_name ?? "";
     return !q || clientName.toLowerCase().includes(q) || storeName.toLowerCase().includes(q);
   });
+
+  const openReleve = (d: CreanceRead) => {
+    const clientCreances = creances.filter((c) => c.client_id === d.client_id);
+    setReleveDoc(
+      creancesToReleveDocument(clientCreances, {
+        clientName: d.client_name ?? `Client #${d.client_id}`,
+        clientPhone: d.client_phone,
+        storeName: d.store_name,
+      }),
+    );
+  };
 
   // KPIs
   const total = filtered.reduce((a, d) => a + Number(d.montant_restant), 0);
@@ -156,10 +287,7 @@ function Page() {
 
   return (
     <>
-      <PageHeader
-        title={t("debts.title") as string}
-        description={t("debts.subtitle") as string}
-      />
+      <PageHeader title={t("debts.title") as string} description={t("debts.subtitle") as string} />
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <KpiCard
@@ -203,7 +331,9 @@ function Page() {
               <SelectContent>
                 <SelectItem value="all">Toutes les boutiques</SelectItem>
                 {authorizedStores.map((s) => (
-                  <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                  <SelectItem key={s.id} value={String(s.id)}>
+                    {s.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -219,7 +349,7 @@ function Page() {
               <TableHead className="text-right">{t("debts.col.remaining") as string}</TableHead>
               <TableHead>{t("debts.col.due") as string}</TableHead>
               <TableHead>{t("debts.col.status") as string}</TableHead>
-              <TableHead className="w-28" />
+              <TableHead className="w-64" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -274,14 +404,41 @@ function Page() {
                       <StatusBadge status={d.statut} />
                     </TableCell>
                     <TableCell>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setSelected(d)}
-                        disabled={d.statut === "soldee" || d.statut === "annulee"}
-                      >
-                        {t("debts.recordPayment") as string}
-                      </Button>
+                      <div className="flex flex-wrap items-center justify-end gap-1.5">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => openReleve(d)}
+                          title="Relevé de compte"
+                        >
+                          <Printer className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setRelanceTarget(d)}
+                          disabled={d.statut === "soldee" || d.statut === "annulee"}
+                          title={
+                            d.nombre_relances > 0
+                              ? `${d.nombre_relances} relance(s) envoyée(s)`
+                              : "Envoyer une relance"
+                          }
+                        >
+                          <BellRing
+                            className={
+                              d.nombre_relances > 0 ? "h-3.5 w-3.5 text-warning" : "h-3.5 w-3.5"
+                            }
+                          />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setSelected(d)}
+                          disabled={d.statut === "soldee" || d.statut === "annulee"}
+                        >
+                          {t("debts.recordPayment") as string}
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -304,6 +461,19 @@ function Page() {
           onClose={() => setSelected(null)}
         />
       )}
+      {relanceTarget && (
+        <RelanceDialog
+          creance={relanceTarget}
+          open={!!relanceTarget}
+          onClose={() => setRelanceTarget(null)}
+        />
+      )}
+      <PrintPreviewDialog
+        open={!!releveDoc}
+        document={releveDoc}
+        config={{ format: "a4" }}
+        onClose={() => setReleveDoc(null)}
+      />
     </>
   );
 }

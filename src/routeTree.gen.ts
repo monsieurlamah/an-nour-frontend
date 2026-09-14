@@ -23,11 +23,12 @@ import { Route as AppReportsRouteImport } from './routes/app.reports'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppPosRouteImport } from './routes/app.pos'
 import { Route as AppNotificationsRouteImport } from './routes/app.notifications'
+import { Route as AppLogsRouteImport } from './routes/app.logs'
 import { Route as AppInventoryRouteImport } from './routes/app.inventory'
 import { Route as AppHelpRouteImport } from './routes/app.help'
 import { Route as AppExpensesRouteImport } from './routes/app.expenses'
 import { Route as AppUsersIndexRouteImport } from './routes/app.users.index'
-import { Route as AppSuppliersIndexRouteImport } from './routes/app.suppliers.index'
+import { Route as AppTransfersIndexRouteImport } from './routes/app.transfers.index'
 import { Route as AppStoresIndexRouteImport } from './routes/app.stores.index'
 import { Route as AppSalesIndexRouteImport } from './routes/app.sales.index'
 import { Route as AppProductsIndexRouteImport } from './routes/app.products.index'
@@ -36,8 +37,8 @@ import { Route as AppDebtsIndexRouteImport } from './routes/app.debts.index'
 import { Route as AppCustomersIndexRouteImport } from './routes/app.customers.index'
 import { Route as AppUsersPermissionsRouteImport } from './routes/app.users.permissions'
 import { Route as AppUsersIdRouteImport } from './routes/app.users.$id'
-import { Route as AppSuppliersNewRouteImport } from './routes/app.suppliers.new'
-import { Route as AppSuppliersIdRouteImport } from './routes/app.suppliers.$id'
+import { Route as AppTransfersNewRouteImport } from './routes/app.transfers.new'
+import { Route as AppTransfersIdRouteImport } from './routes/app.transfers.$id'
 import { Route as AppStoresNewRouteImport } from './routes/app.stores.new'
 import { Route as AppStoresIdRouteImport } from './routes/app.stores.$id'
 import { Route as AppSalesIdRouteImport } from './routes/app.sales.$id'
@@ -123,6 +124,11 @@ const AppNotificationsRoute = AppNotificationsRouteImport.update({
   path: '/notifications',
   getParentRoute: () => AppRoute,
 } as any)
+const AppLogsRoute = AppLogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppInventoryRoute = AppInventoryRouteImport.update({
   id: '/inventory',
   path: '/inventory',
@@ -143,9 +149,9 @@ const AppUsersIndexRoute = AppUsersIndexRouteImport.update({
   path: '/users/',
   getParentRoute: () => AppRoute,
 } as any)
-const AppSuppliersIndexRoute = AppSuppliersIndexRouteImport.update({
-  id: '/suppliers/',
-  path: '/suppliers/',
+const AppTransfersIndexRoute = AppTransfersIndexRouteImport.update({
+  id: '/transfers/',
+  path: '/transfers/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppStoresIndexRoute = AppStoresIndexRouteImport.update({
@@ -188,14 +194,14 @@ const AppUsersIdRoute = AppUsersIdRouteImport.update({
   path: '/users/$id',
   getParentRoute: () => AppRoute,
 } as any)
-const AppSuppliersNewRoute = AppSuppliersNewRouteImport.update({
-  id: '/suppliers/new',
-  path: '/suppliers/new',
+const AppTransfersNewRoute = AppTransfersNewRouteImport.update({
+  id: '/transfers/new',
+  path: '/transfers/new',
   getParentRoute: () => AppRoute,
 } as any)
-const AppSuppliersIdRoute = AppSuppliersIdRouteImport.update({
-  id: '/suppliers/$id',
-  path: '/suppliers/$id',
+const AppTransfersIdRoute = AppTransfersIdRouteImport.update({
+  id: '/transfers/$id',
+  path: '/transfers/$id',
   getParentRoute: () => AppRoute,
 } as any)
 const AppStoresNewRoute = AppStoresNewRouteImport.update({
@@ -281,6 +287,7 @@ export interface FileRoutesByFullPath {
   '/app/expenses': typeof AppExpensesRoute
   '/app/help': typeof AppHelpRoute
   '/app/inventory': typeof AppInventoryRouteWithChildren
+  '/app/logs': typeof AppLogsRoute
   '/app/notifications': typeof AppNotificationsRoute
   '/app/pos': typeof AppPosRoute
   '/app/profile': typeof AppProfileRoute
@@ -301,8 +308,8 @@ export interface FileRoutesByFullPath {
   '/app/sales/$id': typeof AppSalesIdRoute
   '/app/stores/$id': typeof AppStoresIdRoute
   '/app/stores/new': typeof AppStoresNewRoute
-  '/app/suppliers/$id': typeof AppSuppliersIdRoute
-  '/app/suppliers/new': typeof AppSuppliersNewRoute
+  '/app/transfers/$id': typeof AppTransfersIdRoute
+  '/app/transfers/new': typeof AppTransfersNewRoute
   '/app/users/$id': typeof AppUsersIdRoute
   '/app/users/permissions': typeof AppUsersPermissionsRoute
   '/app/customers/': typeof AppCustomersIndexRoute
@@ -311,7 +318,7 @@ export interface FileRoutesByFullPath {
   '/app/products/': typeof AppProductsIndexRoute
   '/app/sales/': typeof AppSalesIndexRoute
   '/app/stores/': typeof AppStoresIndexRoute
-  '/app/suppliers/': typeof AppSuppliersIndexRoute
+  '/app/transfers/': typeof AppTransfersIndexRoute
   '/app/users/': typeof AppUsersIndexRoute
 }
 export interface FileRoutesByTo {
@@ -325,6 +332,7 @@ export interface FileRoutesByTo {
   '/app/expenses': typeof AppExpensesRoute
   '/app/help': typeof AppHelpRoute
   '/app/inventory': typeof AppInventoryRouteWithChildren
+  '/app/logs': typeof AppLogsRoute
   '/app/notifications': typeof AppNotificationsRoute
   '/app/pos': typeof AppPosRoute
   '/app/profile': typeof AppProfileRoute
@@ -345,8 +353,8 @@ export interface FileRoutesByTo {
   '/app/sales/$id': typeof AppSalesIdRoute
   '/app/stores/$id': typeof AppStoresIdRoute
   '/app/stores/new': typeof AppStoresNewRoute
-  '/app/suppliers/$id': typeof AppSuppliersIdRoute
-  '/app/suppliers/new': typeof AppSuppliersNewRoute
+  '/app/transfers/$id': typeof AppTransfersIdRoute
+  '/app/transfers/new': typeof AppTransfersNewRoute
   '/app/users/$id': typeof AppUsersIdRoute
   '/app/users/permissions': typeof AppUsersPermissionsRoute
   '/app/customers': typeof AppCustomersIndexRoute
@@ -355,7 +363,7 @@ export interface FileRoutesByTo {
   '/app/products': typeof AppProductsIndexRoute
   '/app/sales': typeof AppSalesIndexRoute
   '/app/stores': typeof AppStoresIndexRoute
-  '/app/suppliers': typeof AppSuppliersIndexRoute
+  '/app/transfers': typeof AppTransfersIndexRoute
   '/app/users': typeof AppUsersIndexRoute
 }
 export interface FileRoutesById {
@@ -371,6 +379,7 @@ export interface FileRoutesById {
   '/app/expenses': typeof AppExpensesRoute
   '/app/help': typeof AppHelpRoute
   '/app/inventory': typeof AppInventoryRouteWithChildren
+  '/app/logs': typeof AppLogsRoute
   '/app/notifications': typeof AppNotificationsRoute
   '/app/pos': typeof AppPosRoute
   '/app/profile': typeof AppProfileRoute
@@ -391,8 +400,8 @@ export interface FileRoutesById {
   '/app/sales/$id': typeof AppSalesIdRoute
   '/app/stores/$id': typeof AppStoresIdRoute
   '/app/stores/new': typeof AppStoresNewRoute
-  '/app/suppliers/$id': typeof AppSuppliersIdRoute
-  '/app/suppliers/new': typeof AppSuppliersNewRoute
+  '/app/transfers/$id': typeof AppTransfersIdRoute
+  '/app/transfers/new': typeof AppTransfersNewRoute
   '/app/users/$id': typeof AppUsersIdRoute
   '/app/users/permissions': typeof AppUsersPermissionsRoute
   '/app/customers/': typeof AppCustomersIndexRoute
@@ -401,7 +410,7 @@ export interface FileRoutesById {
   '/app/products/': typeof AppProductsIndexRoute
   '/app/sales/': typeof AppSalesIndexRoute
   '/app/stores/': typeof AppStoresIndexRoute
-  '/app/suppliers/': typeof AppSuppliersIndexRoute
+  '/app/transfers/': typeof AppTransfersIndexRoute
   '/app/users/': typeof AppUsersIndexRoute
 }
 export interface FileRouteTypes {
@@ -418,6 +427,7 @@ export interface FileRouteTypes {
     | '/app/expenses'
     | '/app/help'
     | '/app/inventory'
+    | '/app/logs'
     | '/app/notifications'
     | '/app/pos'
     | '/app/profile'
@@ -438,8 +448,8 @@ export interface FileRouteTypes {
     | '/app/sales/$id'
     | '/app/stores/$id'
     | '/app/stores/new'
-    | '/app/suppliers/$id'
-    | '/app/suppliers/new'
+    | '/app/transfers/$id'
+    | '/app/transfers/new'
     | '/app/users/$id'
     | '/app/users/permissions'
     | '/app/customers/'
@@ -448,7 +458,7 @@ export interface FileRouteTypes {
     | '/app/products/'
     | '/app/sales/'
     | '/app/stores/'
-    | '/app/suppliers/'
+    | '/app/transfers/'
     | '/app/users/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -462,6 +472,7 @@ export interface FileRouteTypes {
     | '/app/expenses'
     | '/app/help'
     | '/app/inventory'
+    | '/app/logs'
     | '/app/notifications'
     | '/app/pos'
     | '/app/profile'
@@ -482,8 +493,8 @@ export interface FileRouteTypes {
     | '/app/sales/$id'
     | '/app/stores/$id'
     | '/app/stores/new'
-    | '/app/suppliers/$id'
-    | '/app/suppliers/new'
+    | '/app/transfers/$id'
+    | '/app/transfers/new'
     | '/app/users/$id'
     | '/app/users/permissions'
     | '/app/customers'
@@ -492,7 +503,7 @@ export interface FileRouteTypes {
     | '/app/products'
     | '/app/sales'
     | '/app/stores'
-    | '/app/suppliers'
+    | '/app/transfers'
     | '/app/users'
   id:
     | '__root__'
@@ -507,6 +518,7 @@ export interface FileRouteTypes {
     | '/app/expenses'
     | '/app/help'
     | '/app/inventory'
+    | '/app/logs'
     | '/app/notifications'
     | '/app/pos'
     | '/app/profile'
@@ -527,8 +539,8 @@ export interface FileRouteTypes {
     | '/app/sales/$id'
     | '/app/stores/$id'
     | '/app/stores/new'
-    | '/app/suppliers/$id'
-    | '/app/suppliers/new'
+    | '/app/transfers/$id'
+    | '/app/transfers/new'
     | '/app/users/$id'
     | '/app/users/permissions'
     | '/app/customers/'
@@ -537,7 +549,7 @@ export interface FileRouteTypes {
     | '/app/products/'
     | '/app/sales/'
     | '/app/stores/'
-    | '/app/suppliers/'
+    | '/app/transfers/'
     | '/app/users/'
   fileRoutesById: FileRoutesById
 }
@@ -652,6 +664,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppNotificationsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/logs': {
+      id: '/app/logs'
+      path: '/logs'
+      fullPath: '/app/logs'
+      preLoaderRoute: typeof AppLogsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/inventory': {
       id: '/app/inventory'
       path: '/inventory'
@@ -680,11 +699,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppUsersIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/app/suppliers/': {
-      id: '/app/suppliers/'
-      path: '/suppliers'
-      fullPath: '/app/suppliers/'
-      preLoaderRoute: typeof AppSuppliersIndexRouteImport
+    '/app/transfers/': {
+      id: '/app/transfers/'
+      path: '/transfers'
+      fullPath: '/app/transfers/'
+      preLoaderRoute: typeof AppTransfersIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/stores/': {
@@ -743,18 +762,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppUsersIdRouteImport
       parentRoute: typeof AppRoute
     }
-    '/app/suppliers/new': {
-      id: '/app/suppliers/new'
-      path: '/suppliers/new'
-      fullPath: '/app/suppliers/new'
-      preLoaderRoute: typeof AppSuppliersNewRouteImport
+    '/app/transfers/new': {
+      id: '/app/transfers/new'
+      path: '/transfers/new'
+      fullPath: '/app/transfers/new'
+      preLoaderRoute: typeof AppTransfersNewRouteImport
       parentRoute: typeof AppRoute
     }
-    '/app/suppliers/$id': {
-      id: '/app/suppliers/$id'
-      path: '/suppliers/$id'
-      fullPath: '/app/suppliers/$id'
-      preLoaderRoute: typeof AppSuppliersIdRouteImport
+    '/app/transfers/$id': {
+      id: '/app/transfers/$id'
+      path: '/transfers/$id'
+      fullPath: '/app/transfers/$id'
+      preLoaderRoute: typeof AppTransfersIdRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/stores/new': {
@@ -882,6 +901,7 @@ interface AppRouteChildren {
   AppExpensesRoute: typeof AppExpensesRoute
   AppHelpRoute: typeof AppHelpRoute
   AppInventoryRoute: typeof AppInventoryRouteWithChildren
+  AppLogsRoute: typeof AppLogsRoute
   AppNotificationsRoute: typeof AppNotificationsRoute
   AppPosRoute: typeof AppPosRoute
   AppProfileRoute: typeof AppProfileRoute
@@ -897,8 +917,8 @@ interface AppRouteChildren {
   AppSalesIdRoute: typeof AppSalesIdRoute
   AppStoresIdRoute: typeof AppStoresIdRoute
   AppStoresNewRoute: typeof AppStoresNewRoute
-  AppSuppliersIdRoute: typeof AppSuppliersIdRoute
-  AppSuppliersNewRoute: typeof AppSuppliersNewRoute
+  AppTransfersIdRoute: typeof AppTransfersIdRoute
+  AppTransfersNewRoute: typeof AppTransfersNewRoute
   AppUsersIdRoute: typeof AppUsersIdRoute
   AppUsersPermissionsRoute: typeof AppUsersPermissionsRoute
   AppCustomersIndexRoute: typeof AppCustomersIndexRoute
@@ -907,7 +927,7 @@ interface AppRouteChildren {
   AppProductsIndexRoute: typeof AppProductsIndexRoute
   AppSalesIndexRoute: typeof AppSalesIndexRoute
   AppStoresIndexRoute: typeof AppStoresIndexRoute
-  AppSuppliersIndexRoute: typeof AppSuppliersIndexRoute
+  AppTransfersIndexRoute: typeof AppTransfersIndexRoute
   AppUsersIndexRoute: typeof AppUsersIndexRoute
 }
 
@@ -915,6 +935,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppExpensesRoute: AppExpensesRoute,
   AppHelpRoute: AppHelpRoute,
   AppInventoryRoute: AppInventoryRouteWithChildren,
+  AppLogsRoute: AppLogsRoute,
   AppNotificationsRoute: AppNotificationsRoute,
   AppPosRoute: AppPosRoute,
   AppProfileRoute: AppProfileRoute,
@@ -930,8 +951,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppSalesIdRoute: AppSalesIdRoute,
   AppStoresIdRoute: AppStoresIdRoute,
   AppStoresNewRoute: AppStoresNewRoute,
-  AppSuppliersIdRoute: AppSuppliersIdRoute,
-  AppSuppliersNewRoute: AppSuppliersNewRoute,
+  AppTransfersIdRoute: AppTransfersIdRoute,
+  AppTransfersNewRoute: AppTransfersNewRoute,
   AppUsersIdRoute: AppUsersIdRoute,
   AppUsersPermissionsRoute: AppUsersPermissionsRoute,
   AppCustomersIndexRoute: AppCustomersIndexRoute,
@@ -940,7 +961,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppProductsIndexRoute: AppProductsIndexRoute,
   AppSalesIndexRoute: AppSalesIndexRoute,
   AppStoresIndexRoute: AppStoresIndexRoute,
-  AppSuppliersIndexRoute: AppSuppliersIndexRoute,
+  AppTransfersIndexRoute: AppTransfersIndexRoute,
   AppUsersIndexRoute: AppUsersIndexRoute,
 }
 

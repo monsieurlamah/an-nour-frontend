@@ -1,7 +1,6 @@
-// Workspace context — switch between HQ, a specific Store, or a Supplier
-// (optionally scoped to one of its linked stores). Persists in localStorage,
-// subscription-based so UI re-renders on switch. SSR-safe (no module-level
-// localStorage reads).
+// Workspace context — switch between HQ and a specific Store. Persists in
+// localStorage, subscription-based so UI re-renders on switch. SSR-safe (no
+// module-level localStorage reads).
 //
 // This module is intentionally dependency-free (no API calls, no mock data):
 // it only tracks *which* workspace is selected, as plain ids. Resolving a
@@ -9,19 +8,14 @@
 // work-context.ts, which joins this module's state with the real /stores
 // API. Keeping workspace.ts this thin is what lets it stay a stable,
 // independent source of truth as the rest of the app evolves around it.
-//
-// The "supplier" kind is the one exception still backed by mock data — see
-// workspace-data.mock.ts — until a real supplier↔store relationship exists
-// server-side (explicitly out of scope for now).
 
 import { useEffect, useState } from "react";
 
-export type WorkspaceKind = "hq" | "store" | "supplier";
+export type WorkspaceKind = "hq" | "store";
 
 export type Workspace = {
   kind: WorkspaceKind;
-  id?: string; // store id (real backend id, stringified) or supplier id (mock)
-  storeId?: string; // when kind === "supplier", optional scoped store id (mock)
+  id?: string; // store id (real backend id, stringified)
 };
 
 const STORAGE_KEY = "retailux:workspace";
@@ -53,7 +47,10 @@ export function hydrateWorkspaceFromStorage() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Workspace;
-      if (parsed && typeof parsed.kind === "string") {
+      // Defensive: a browser may still hold a pre-existing "supplier"
+      // workspace from before that kind was retired (no external-supplier
+      // concept exists in this app) — fall back to HQ rather than restore it.
+      if (parsed && (parsed.kind === "hq" || parsed.kind === "store")) {
         current = parsed;
         listeners.forEach((l) => l(current));
       }
@@ -77,30 +74,17 @@ export function useWorkspace() {
 }
 
 // ───────────────── Label ─────────────────
-// Pure formatting — callers resolve the actual store/supplier and pass the
-// display fields in. Keeps this module free of any data-fetching concern.
+// Pure formatting — callers resolve the actual store and pass the display
+// fields in. Keeps this module free of any data-fetching concern.
 export function getWorkspaceLabel(
   w: Workspace,
   resolved?: {
     store?: { name: string; city?: string | null } | null;
-    supplierName?: string;
-    supplierCity?: string;
-    scopedStoreName?: string;
   },
 ): { title: string; subtitle?: string } {
   if (w.kind === "hq") return { title: "HQ", subtitle: "Siège · Vue globale" };
-  if (w.kind === "store") {
-    const s = resolved?.store;
-    return s
-      ? { title: s.name, subtitle: `Boutique · ${s.city ?? ""}` }
-      : { title: "Boutique", subtitle: "" };
-  }
-  return resolved?.supplierName
-    ? {
-        title: resolved.supplierName,
-        subtitle: resolved.scopedStoreName
-          ? `Fournisseur · ${resolved.scopedStoreName}`
-          : `Fournisseur · ${resolved.supplierCity ?? ""}`,
-      }
-    : { title: "Fournisseur", subtitle: "" };
+  const s = resolved?.store;
+  return s
+    ? { title: s.name, subtitle: `Boutique · ${s.city ?? ""}` }
+    : { title: "Boutique", subtitle: "" };
 }

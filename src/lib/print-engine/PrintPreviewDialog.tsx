@@ -17,12 +17,21 @@ import { A4Template } from "./templates/A4Template";
 import { generateQRDataURL } from "./qr";
 import { printHtml } from "./print";
 import { downloadPdf } from "./pdf";
+import { isA4ByDefault } from "./constants";
 
 const FORMAT_LABELS: Record<PageFormat, string> = {
   "thermal-58": "Ticket 58 mm",
   "thermal-80": "Ticket 80 mm",
-  a4: "Facture A4",
+  a4: "Document A4",
 };
+
+/** Business paperwork (facture / proforma / bon de commande / bon de
+ * livraison) opens on the A4 letterhead; only the POS ticket defaults to the
+ * thermal printer. An explicit `config.format` always wins. */
+function defaultFormat(doc: DocumentPrintData | null, config: PrintConfig): PageFormat {
+  if (config.format) return config.format;
+  return doc && isA4ByDefault(doc.type) ? "a4" : "thermal-80";
+}
 
 // Label shown next to the success checkmark when `showSuccess` is set —
 // keyed by document type so the banner never says "Vente enregistrée" for
@@ -30,6 +39,7 @@ const FORMAT_LABELS: Record<PageFormat, string> = {
 const SUCCESS_LABEL: Partial<Record<DocumentPrintData["type"], string>> = {
   sale_receipt: "Vente enregistrée",
   invoice: "Facture générée",
+  quote: "Proforma émise",
   commande_demande: "Demande soumise",
   commande_proforma: "Facture proforma générée",
   commande_facture: "Facture générée",
@@ -50,8 +60,10 @@ export function PrintPreviewDialog({
   /** Shows a success banner (label from SUCCESS_LABEL, keyed by document type). */
   showSuccess?: boolean;
 }) {
-  const config: PrintConfig = { ...DEFAULT_PRINT_CONFIG, ...configProp };
-  const [format, setFormat] = useState<PageFormat>(config.format ?? "thermal-80");
+  // DEFAULT_PRINT_CONFIG's format is only a fallback for the POS ticket —
+  // never let it override the per-document default computed below.
+  const config: PrintConfig = { ...DEFAULT_PRINT_CONFIG, format: undefined, ...configProp };
+  const [format, setFormat] = useState<PageFormat>(() => defaultFormat(doc, config));
   const [qrDataUrl, setQrDataUrl] = useState<string | undefined>(undefined);
   const [pdfLoading, setPdfLoading] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -60,9 +72,9 @@ export function PrintPreviewDialog({
   // so a user switching to A4 for one receipt doesn't carry that choice
   // over to the next one unexpectedly.
   useEffect(() => {
-    if (doc) setFormat(config.format ?? "thermal-80");
+    if (doc) setFormat(defaultFormat(doc, config));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [doc?.reference]);
+  }, [doc?.reference, doc?.type]);
 
   // Generate QR once per document
   useEffect(() => {
@@ -130,11 +142,12 @@ export function PrintPreviewDialog({
               style={{
                 background: "#fff",
                 width: format === "a4" ? "210mm" : format === "thermal-58" ? "58mm" : "80mm",
-                minWidth: format === "a4" ? "600px" : undefined,
                 transformOrigin: "top center",
-                // Scale down A4 preview to fit the modal
+                // Scale down A4 preview to fit the modal (the sheet is
+                // 297mm ≈ 1123px tall; at 0.6 we hide the 40% of height
+                // the transform frees up).
                 ...(format === "a4"
-                  ? { transform: "scale(0.6)", transformOrigin: "top center", marginBottom: "-200px" }
+                  ? { transform: "scale(0.6)", transformOrigin: "top center", marginBottom: "-450px" }
                   : {}),
               }}
             >

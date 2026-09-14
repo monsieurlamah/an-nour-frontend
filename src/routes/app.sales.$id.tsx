@@ -28,7 +28,7 @@ import { fmtXAF } from "@/lib/mock-data";
 import { ventesApi, clientsApi, creancesApi, catalogApi, storesApi, qk } from "@/lib/api";
 import { useWorkContext } from "@/lib/work-context";
 import { PrintPreviewDialog } from "@/lib/print-engine";
-import { saleToDocument, saleToDeliveryNoteDocument } from "@/lib/pos-print-adapter";
+import { saleToDocument, saleToDeliveryNoteDocument, saleToProformaDocument } from "@/lib/pos-print-adapter";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useT, formatDateTime } from "@/lib/i18n";
@@ -39,6 +39,8 @@ export const Route = createFileRoute("/app/sales/$id")({ component: Page });
 // ── Status config ─────────────────────────────────────────────────────────────
 
 const STATUT_LABEL: Record<string, string> = {
+  proforma: "Proforma", proforma_expiree: "Proforma expirée",
+  proforma_rejetee: "Proforma rejetée",
   completee: "Payée", partiellement_payee: "Partiellement payée",
   impayee: "Non payée", en_cours: "En cours",
   annulee: "Annulée", partiellement_retournee: "Partiellement retournée",
@@ -47,6 +49,9 @@ const STATUT_LABEL: Record<string, string> = {
 };
 
 const STATUT_COLORS: Record<string, string> = {
+  proforma: "bg-info/10 text-info border-info/30",
+  proforma_expiree: "bg-muted text-muted-foreground",
+  proforma_rejetee: "bg-destructive/10 text-destructive border-destructive/30",
   completee: "bg-success/10 text-success border-success/30",
   partiellement_payee: "bg-warning/10 text-warning border-warning/30",
   impayee: "bg-muted text-muted-foreground",
@@ -56,6 +61,14 @@ const STATUT_COLORS: Record<string, string> = {
   partiellement_remboursee: "bg-purple-100 text-purple-700 border-purple-200",
   remboursee: "bg-purple-100 text-purple-700 border-purple-200",
 };
+
+// A proforma has no stock/payment impact yet — nearly every other action on
+// this page (retour, remboursement, livraison, annulation) assumes a real
+// facture exists, so they're all hidden until this one is transformed or
+// rejected. See VenteService — proforma/proforma_expiree are the only two
+// statuses a devis can be in before it becomes a facture, gets rejected, or
+// expires (the third).
+const PROFORMA_STATUTS = new Set(["proforma", "proforma_expiree"]);
 
 const PAYMENT_LABEL: Record<string, string> = {
   especes: "Espèces", mobile_money: "Mobile Money",
@@ -135,11 +148,21 @@ function Page() {
   const [retourOpen, setRetourOpen] = useState(false);
   const [remboursementOpen, setRemboursementOpen] = useState(false);
   const [encaisserOpen, setEncaisserOpen] = useState(false);
+  const [transformOpen, setTransformOpen] = useState(false);
+  const [rejectProformaOpen, setRejectProformaOpen] = useState(false);
 
   // "Encaisser le reste" form state
   const [encaisserMontant, setEncaisserMontant] = useState("");
   const [encaisserMode, setEncaisserMode] = useState<PaiementMode>("especes");
   const [encaisserRef, setEncaisserRef] = useState("");
+
+  // "Transformer en facture" (§9.3) form state — payment is optional at
+  // this step (the rest becomes a créance, same rule as a direct sale).
+  const [transformPayNow, setTransformPayNow] = useState(true);
+  const [transformMontant, setTransformMontant] = useState("");
+  const [transformMode, setTransformMode] = useState<PaiementMode>("especes");
+  const [transformDeliverNow, setTransformDeliverNow] = useState(true);
+  const [rejectProformaMotif, setRejectProformaMotif] = useState("");
 
   // Return form state
   const [selectedLines, setSelectedLines] = useState<Record<number, number>>({});
@@ -252,6 +275,35 @@ function Page() {
     onError: (err) => toast.error(err instanceof Error ? err.message : "Erreur"),
   });
 
+  const transformMutation = useMutation({
+    mutationFn: () =>
+      ventesApi.transform(Number(id), {
+        paiements:
+          transformPayNow && Number(transformMontant) > 0
+            ? [{ mode: transformMode, montant: Number(transformMontant) }]
+            : [],
+        livraison_statut: transformDeliverNow ? "livre" : "non_livre",
+      }),
+    onSuccess: (facture) => {
+      toast.success("Proforma transformée en facture", { description: facture.numero_facture ?? undefined });
+      invalidate();
+      setTransformOpen(false);
+      setTransformMontant("");
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "Erreur"),
+  });
+
+  const rejectProformaMutation = useMutation({
+    mutationFn: () => ventesApi.rejectProforma(Number(id), { motif: rejectProformaMotif }),
+    onSuccess: () => {
+      toast.success("Proforma rejetée");
+      invalidate();
+      setRejectProformaOpen(false);
+      setRejectProformaMotif("");
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "Erreur"),
+  });
+
   // useMemo must be called unconditionally — before any early returns.
   const alreadyReturned = useMemo(() => {
     const map: Record<number, number> = {};
@@ -269,12 +321,27 @@ function Page() {
   const clientObj = vente.client_id ? clients.find(c => c.id === vente.client_id) : null;
   const clientLabel = clientObj ? `${clientObj.name}${clientObj.prenom ? ` ${clientObj.prenom}` : ""}` : "Client comptant";
 
-  const canVoid = has("ventes.annuler") && !["annulee", "remboursee"].includes(vente.statut);
-  const canReturn = has("ventes.retourner") && !["annulee", "retournee"].includes(vente.statut);
-  const canRefund = has("ventes.rembourser") && !["annulee", "remboursee"].includes(vente.statut);
+  // A proforma has no stock/payment yet — none of the facture-only actions
+  // below apply until it's transformed (or it's moot once rejected/expired).
+  const isProforma = PROFORMA_STATUTS.has(vente.statut);
+  const isProformaRejected = vente.statut === "proforma_rejetee";
+  const canTransform = has("ventes.create") && isProforma && vente.statut === "proforma";
+  const canRejectProforma = has("ventes.create") && isProforma;
+
+  const canVoid =
+    !isProforma && !isProformaRejected &&
+    has("ventes.annuler") && !["annulee", "remboursee"].includes(vente.statut);
+  const canReturn =
+    !isProforma && !isProformaRejected &&
+    has("ventes.retourner") && !["annulee", "retournee"].includes(vente.statut);
+  const canRefund =
+    !isProforma && !isProformaRejected &&
+    has("ventes.rembourser") && !["annulee", "remboursee"].includes(vente.statut);
   const canDeliver =
+    !isProforma && !isProformaRejected &&
     has("ventes.livrer") && vente.livraison_statut === "non_livre" && vente.statut !== "annulee";
   const canEncaisser =
+    !isProforma && !isProformaRejected &&
     has("paiements.create") && Number(vente.montant_restant) > 0 && vente.statut !== "annulee";
 
   const returnableLines = (vente.lignes ?? []).filter(
@@ -344,6 +411,17 @@ function Page() {
             {vente.numero_bon_livraison && (
               <Button variant="outline" size="sm" onClick={() => setPrintBLOpen(true)}>
                 <Truck className="mr-1.5 h-3.5 w-3.5" /> Bon de livraison
+              </Button>
+            )}
+            {canTransform && (
+              <Button size="sm" onClick={() => setTransformOpen(true)}>
+                <CheckCircle className="mr-1.5 h-3.5 w-3.5" /> Transformer en facture
+              </Button>
+            )}
+            {canRejectProforma && (
+              <Button variant="outline" size="sm" className="text-destructive hover:text-destructive"
+                onClick={() => setRejectProformaOpen(true)}>
+                <XCircle className="mr-1.5 h-3.5 w-3.5" /> Rejeter la proforma
               </Button>
             )}
             {canDeliver && (
@@ -579,11 +657,19 @@ function Page() {
       {/* ── Print ─────────────────────────────────────────────────────── */}
       <PrintPreviewDialog
         open={printOpen}
-        document={saleToDocument(vente, {
-          store,
-          clientName: clientLabel === "Client comptant" ? null : clientLabel,
-          productName,
-        })}
+        document={
+          isProforma || isProformaRejected
+            ? saleToProformaDocument(vente, {
+                store,
+                clientName: clientLabel === "Client comptant" ? null : clientLabel,
+                productName,
+              })
+            : saleToDocument(vente, {
+                store,
+                clientName: clientLabel === "Client comptant" ? null : clientLabel,
+                productName,
+              })
+        }
         onClose={() => setPrintOpen(false)}
       />
 
@@ -636,6 +722,92 @@ function Page() {
             <Button onClick={submitEncaisser} disabled={encaisserMutation.isPending || !encaisserMontant || Number(encaisserMontant) <= 0}>
               {encaisserMutation.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
               Confirmer l'encaissement
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Transformer la proforma en facture (§9.3) ────────────────────── */}
+      <Dialog open={transformOpen} onOpenChange={(o) => !transformMutation.isPending && setTransformOpen(o)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><CheckCircle className="h-4 w-4" />Transformer en facture</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Le devis {vente.numero_proforma} devient une facture définitive : le stock sera
+              décrémenté et un nouveau numéro de facture officiel sera attribué.
+            </p>
+            <div className="rounded-lg bg-secondary/30 p-3 text-sm">
+              <div className="flex justify-between font-semibold"><span>Total</span><span className="tabular-nums">{fmtXAF(Number(vente.montant_total))}</span></div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox id="transform-deliver" checked={transformDeliverNow} onCheckedChange={(v) => setTransformDeliverNow(v === true)} />
+              <Label htmlFor="transform-deliver" className="cursor-pointer text-sm font-normal">Livrer la marchandise maintenant</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox id="transform-pay" checked={transformPayNow} onCheckedChange={(v) => setTransformPayNow(v === true)} />
+              <Label htmlFor="transform-pay" className="cursor-pointer text-sm font-normal">Encaisser un paiement maintenant</Label>
+            </div>
+            {transformPayNow && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Montant</Label>
+                  <Input type="number" min={0} max={Number(vente.montant_total)} value={transformMontant}
+                    onChange={(e) => setTransformMontant(e.target.value)} className="h-9 tabular-nums"
+                    placeholder={String(vente.montant_total)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Mode</Label>
+                  <Select value={transformMode} onValueChange={(v) => setTransformMode(v as PaiementMode)}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(PAYMENT_LABEL).map(([mode, label]) => (
+                        <SelectItem key={mode} value={mode}>{label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+            {!transformPayNow && !vente.client_id && (
+              <p className="rounded-md bg-destructive/10 p-2 text-xs text-destructive">
+                Sans paiement, un client est obligatoire (le solde devient une créance).
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTransformOpen(false)} disabled={transformMutation.isPending}>Annuler</Button>
+            <Button
+              onClick={() => transformMutation.mutate()}
+              disabled={transformMutation.isPending || (!transformPayNow && !vente.client_id)}
+            >
+              {transformMutation.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+              Confirmer la transformation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Rejeter la proforma ───────────────────────────────────────────── */}
+      <Dialog open={rejectProformaOpen} onOpenChange={(o) => !rejectProformaMutation.isPending && setRejectProformaOpen(o)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><XCircle className="h-4 w-4" />Rejeter la proforma</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Motif *</Label>
+            <Textarea value={rejectProformaMotif} onChange={(e) => setRejectProformaMotif(e.target.value)} rows={3} placeholder="Pourquoi le client refuse-t-il ce devis ?" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectProformaOpen(false)} disabled={rejectProformaMutation.isPending}>Annuler</Button>
+            <Button
+              variant="destructive"
+              onClick={() => rejectProformaMutation.mutate()}
+              disabled={rejectProformaMutation.isPending || !rejectProformaMotif.trim()}
+            >
+              {rejectProformaMutation.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+              Rejeter
             </Button>
           </DialogFooter>
         </DialogContent>

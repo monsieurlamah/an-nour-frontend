@@ -13,7 +13,9 @@ export type DocumentType =
   | "commande_demande"
   | "commande_proforma"
   | "commande_facture"
-  | "commande_bon_livraison";
+  | "commande_bon_livraison"
+  | "transfert_bon"
+  | "releve_compte";
 
 export type PageFormat = "thermal-58" | "thermal-80" | "a4";
 
@@ -35,6 +37,12 @@ export const DEFAULT_PRINT_CONFIG: PrintConfig = {
 
 // ── Organization (boutique / company) ────────────────────────────────────────
 
+/** Which of the two brand identities issues the document — picks the A4
+ * design: "group" = AN-NOUR GROUP (Direction Générale, technical navy/brick
+ * letterhead), "boutique" = AN-NOUR Immobilier & Déco d'Intérieur (showroom
+ * serif letterhead). Derived from the logo path when omitted. */
+export type PrintBrand = "group" | "boutique";
+
 export interface PrintOrganization {
   name: string;
   address?: string;
@@ -42,6 +50,7 @@ export interface PrintOrganization {
   email?: string;
   nif?: string;
   logo?: string; // URL or data URI
+  brand?: PrintBrand;
 }
 
 // ── Customer ─────────────────────────────────────────────────────────────────
@@ -90,8 +99,8 @@ export interface DocumentTotals {
 export interface DocumentPrintData {
   type: DocumentType;
   reference: string;
-  date: string;       // ISO string
-  createdAt: string;  // ISO string
+  date: string; // ISO string
+  createdAt: string; // ISO string
 
   organization: PrintOrganization;
   issuer?: { name: string; role?: string };
@@ -102,7 +111,7 @@ export interface DocumentPrintData {
 
   payments: DocumentPayment[];
   amountPaid: number;
-  amountDue: number;  // remaining credit (0 when fully paid)
+  amountDue: number; // remaining credit (0 when fully paid)
 
   notes?: string;
   qrContent?: string; // reference, or a future public verification URL
@@ -110,6 +119,9 @@ export interface DocumentPrintData {
   /** Short, prominent banner rendered near the top of the document (e.g.
    * "NON LIVRÉ — à livrer") — used for a sale rung up as non_livre. */
   deliveryNotice?: string;
+  /** ISO date until which a facture proforma stays valid — shown in the A4
+   * title block ("Valable jusqu'au …"). */
+  validUntil?: string;
 
   // Additive, optional — only present on commande logistics documents (bon
   // de livraison). Never touches any existing document's rendering: the

@@ -16,7 +16,7 @@ export const Route = createFileRoute("/app/users/permissions")({ component: Page
 
 const MODULE_ORDER = [
   "dashboard", "stores", "products", "stock", "ventes", "clients",
-  "creances", "paiements", "suppliers", "purchases", "expenses",
+  "creances", "paiements", "expenses",
   "cash", "reports", "notifications", "users", "system",
 ];
 
@@ -29,8 +29,6 @@ const MODULE_LABEL: Record<string, string> = {
   clients: "Clients",
   creances: "Créances",
   paiements: "Paiements",
-  suppliers: "Fournisseurs",
-  purchases: "Achats",
   expenses: "Dépenses",
   cash: "Caisse",
   reports: "Rapports",

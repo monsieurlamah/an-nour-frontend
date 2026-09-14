@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -155,12 +156,13 @@ function Page() {
   });
   const cashBalance =
     (openSession ? Number(openSession.opening_amount) : 0) +
-    cashMovements.reduce((acc, m) => acc + (m.type === "entree" ? Number(m.amount) : -Number(m.amount)), 0);
+    cashMovements.reduce(
+      (acc, m) => acc + (m.type === "entree" ? Number(m.amount) : -Number(m.amount)),
+      0,
+    );
 
   const productMap = Object.fromEntries(products.map((p) => [p.id, p]));
-  const userMap = Object.fromEntries(
-    users.map((u) => [u.id, `${u.firstname} ${u.lastname}`]),
-  );
+  const userMap = Object.fromEntries(users.map((u) => [u.id, `${u.firstname} ${u.lastname}`]));
   const locationMap = Object.fromEntries(allLocations.map((l) => [l.id, l.name]));
 
   const gerantName = store?.gerant_id ? (userMap[store.gerant_id] ?? "Aucun") : "Aucun";
@@ -197,16 +199,19 @@ function Page() {
       <PageHeader
         title={store.name}
         description={
-          [store.code && `#${store.code}`, store.city, store.address]
-            .filter(Boolean)
-            .join(" · ") || "Boutique"
+          [store.code && `#${store.code}`, store.city, store.address].filter(Boolean).join(" · ") ||
+          "Boutique"
         }
         badge={<StatusBadge status={store.status} />}
         actions={
           <>
-            <EditStoreDialog store={store} userMap={userMap} onUpdated={() => {
-              qc.invalidateQueries({ queryKey: qk.stores.detail(storeId) });
-            }} />
+            <EditStoreDialog
+              store={store}
+              userMap={userMap}
+              onUpdated={() => {
+                qc.invalidateQueries({ queryKey: qk.stores.detail(storeId) });
+              }}
+            />
           </>
         }
       />
@@ -371,7 +376,9 @@ function Page() {
               </Table>
               {productStocks.length > 0 && (
                 <div className="border-t p-3 flex justify-between text-xs text-muted-foreground">
-                  <span>{productStocks.length} référence{productStocks.length !== 1 ? "s" : ""}</span>
+                  <span>
+                    {productStocks.length} référence{productStocks.length !== 1 ? "s" : ""}
+                  </span>
                   <span>Valeur totale : {fmtXAF(stockValue)}</span>
                 </div>
               )}
@@ -484,15 +491,23 @@ function Page() {
                     </div>
                     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                       <div>
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Fonds initial</p>
-                        <p className="text-lg font-semibold tabular-nums">{fmtXAF(Number(openSession.opening_amount))}</p>
+                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                          Fonds initial
+                        </p>
+                        <p className="text-lg font-semibold tabular-nums">
+                          {fmtXAF(Number(openSession.opening_amount))}
+                        </p>
                       </div>
                       <div>
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Solde attendu</p>
+                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                          Solde attendu
+                        </p>
                         <p className="text-lg font-semibold tabular-nums">{fmtXAF(cashBalance)}</p>
                       </div>
                       <div>
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Mouvements</p>
+                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                          Mouvements
+                        </p>
                         <p className="text-lg font-semibold tabular-nums">{cashMovements.length}</p>
                       </div>
                     </div>
@@ -506,6 +521,52 @@ function Page() {
                         }}
                       />
                     )}
+                    {cashMovements.length > 0 && (
+                      <div className="border-t pt-3">
+                        <p className="mb-1.5 text-[11px] uppercase tracking-wide text-muted-foreground">
+                          Mouvements de caisse
+                        </p>
+                        <ul className="max-h-64 divide-y overflow-y-auto rounded-lg border">
+                          {cashMovements.map((m) => (
+                            <li
+                              key={m.id}
+                              className="flex items-center justify-between gap-2 px-3 py-2 text-xs"
+                            >
+                              <div className="min-w-0">
+                                <div
+                                  className={
+                                    m.cancelled_at
+                                      ? "text-muted-foreground line-through"
+                                      : "font-medium"
+                                  }
+                                >
+                                  {m.type === "entree" ? "+ " : "− "}
+                                  {fmtXAF(Number(m.amount))}
+                                  {m.reason && (
+                                    <span className="ml-1.5 font-normal text-muted-foreground">
+                                      — {m.reason}
+                                    </span>
+                                  )}
+                                </div>
+                                {m.cancelled_at && (
+                                  <div className="text-[10px] text-destructive">
+                                    Annulé — {m.cancel_reason}
+                                  </div>
+                                )}
+                              </div>
+                              {has("cash.annuler") &&
+                                !m.cancelled_at &&
+                                !m.reverses_movement_id && (
+                                  <CancelCashMovementButton
+                                    movementId={m.id}
+                                    onCancelled={() => qc.invalidateQueries({ queryKey: ["cash"] })}
+                                  />
+                                )}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-3 py-10 text-center">
@@ -514,10 +575,7 @@ function Page() {
                       Aucune caisse ouverte pour cette boutique.
                     </p>
                     {has("cash.manage") && (
-                      <OpenCashSessionDialog
-                        storeId={storeId}
-                        onOpened={() => refetchCash()}
-                      />
+                      <OpenCashSessionDialog storeId={storeId} onOpened={() => refetchCash()} />
                     )}
                   </div>
                 )}
@@ -536,7 +594,10 @@ function Page() {
                 ) : (
                   <ul className="divide-y">
                     {closedSessions.slice(0, 8).map((s) => (
-                      <li key={s.id} className="flex items-center justify-between px-5 py-2.5 text-xs">
+                      <li
+                        key={s.id}
+                        className="flex items-center justify-between px-5 py-2.5 text-xs"
+                      >
                         <div>
                           <p className="font-medium text-foreground">
                             {formatDateTime(s.opened_at, "fr")}
@@ -550,7 +611,9 @@ function Page() {
                             {s.closing_amount !== null ? fmtXAF(Number(s.closing_amount)) : ""}
                           </p>
                           {s.difference_amount !== null && Number(s.difference_amount) !== 0 && (
-                            <p className={`tabular-nums ${Number(s.difference_amount) < 0 ? "text-destructive" : "text-success"}`}>
+                            <p
+                              className={`tabular-nums ${Number(s.difference_amount) < 0 ? "text-destructive" : "text-success"}`}
+                            >
                               {Number(s.difference_amount) > 0 ? "+" : ""}
                               {fmtXAF(Number(s.difference_amount))}
                             </p>
@@ -574,6 +637,15 @@ function Page() {
                 {store.code && <InfoRow label="Code" value={store.code} />}
                 <InfoRow label="Gérant" value={gerantName} />
                 <InfoRow label="Devise" value={store.devise} />
+                {store.phone && <InfoRow label="Téléphone" value={store.phone} />}
+                <InfoRow
+                  label="Plafond remise gérant"
+                  value={
+                    store.remise_max_percent != null
+                      ? `${store.remise_max_percent} %`
+                      : "Aucun plafond"
+                  }
+                />
                 <InfoRow label="Statut" value={<StatusBadge status={store.status} />} />
               </div>
               <div className="space-y-4">
@@ -590,9 +662,7 @@ function Page() {
                 )}
                 {store.address && <InfoRow label="Adresse" value={store.address} />}
                 <InfoRow label="Fuseau horaire" value={store.timezone} />
-                {store.description && (
-                  <InfoRow label="Description" value={store.description} />
-                )}
+                {store.description && <InfoRow label="Description" value={store.description} />}
                 {storeLocation && (
                   <InfoRow
                     label="Emplacement stock"
@@ -629,8 +699,7 @@ function EditThresholdDialog({
   const [threshold, setThreshold] = useState(String(stock.alert_threshold));
 
   const mutation = useMutation({
-    mutationFn: () =>
-      stockApi.updateProductStock(stock.id, { alert_threshold: Number(threshold) }),
+    mutationFn: () => stockApi.updateProductStock(stock.id, { alert_threshold: Number(threshold) }),
     onSuccess: () => {
       toast.success(`Seuil mis à jour : ${threshold} pour "${productName}"`);
       onUpdated();
@@ -701,13 +770,7 @@ function EditThresholdDialog({
   );
 }
 
-function InfoRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: React.ReactNode;
-}) {
+function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
       <div className="text-xs text-muted-foreground mb-0.5">{label}</div>
@@ -731,8 +794,12 @@ function EditStoreDialog({
   const [code, setCode] = useState(store.code ?? "");
   const [city, setCity] = useState(store.city ?? "");
   const [address, setAddress] = useState(store.address ?? "");
+  const [phone, setPhone] = useState(store.phone ?? "");
   const [devise, setDevise] = useState(store.devise);
   const [gerantId, setGerantId] = useState(store.gerant_id ? String(store.gerant_id) : "");
+  const [remiseMax, setRemiseMax] = useState(
+    store.remise_max_percent != null ? String(store.remise_max_percent) : "",
+  );
 
   const { data: users = [] } = useQuery({
     queryKey: qk.users.list(),
@@ -747,8 +814,10 @@ function EditStoreDialog({
         code: code.trim() || undefined,
         city: city.trim() || undefined,
         address: address.trim() || undefined,
+        phone: phone.trim() || undefined,
         devise: devise || undefined,
         gerant_id: gerantId ? Number(gerantId) : undefined,
+        remise_max_percent: remiseMax.trim() ? Number(remiseMax) : null,
       } satisfies StoreUpdate),
     onSuccess: () => {
       toast.success("Boutique mise à jour");
@@ -804,9 +873,34 @@ function EditStoreDialog({
                 </Select>
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Adresse</Label>
+                <Input value={address} onChange={(e) => setAddress(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Téléphone</Label>
+                <Input
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+224 6XX XX XX XX"
+                />
+              </div>
+            </div>
             <div className="space-y-1.5">
-              <Label>Adresse</Label>
-              <Input value={address} onChange={(e) => setAddress(e.target.value)} />
+              <Label>Taux de remise max. autorisé pour les gérants (%)</Label>
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                step={1}
+                value={remiseMax}
+                onChange={(e) => setRemiseMax(e.target.value)}
+                placeholder="Aucun plafond"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Vide = aucun plafond. Au-delà de ce taux, la vente/proforma est refusée.
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label>Gérant</Label>
@@ -840,14 +934,67 @@ function EditStoreDialog({
   );
 }
 
-/* ── Open cash session dialog ─────────────────────────────────────────────── */
-function OpenCashSessionDialog({
-  storeId,
-  onOpened,
+/* ── Cancel cash movement (§10 — annulation/correction avec motif) ────────── */
+function CancelCashMovementButton({
+  movementId,
+  onCancelled,
 }: {
-  storeId: number;
-  onOpened: () => void;
+  movementId: number;
+  onCancelled: () => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const [motif, setMotif] = useState("");
+  const mutation = useMutation({
+    mutationFn: () => cashApi.cancelMovement(movementId, { motif: motif.trim() }),
+    onSuccess: () => {
+      toast.success("Encaissement annulé — écriture de compensation créée");
+      onCancelled();
+      setOpen(false);
+      setMotif("");
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "Erreur"),
+  });
+
+  return (
+    <>
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-6 px-2 text-[11px] text-destructive"
+        onClick={() => setOpen(true)}
+      >
+        Annuler
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-xs">
+          <DialogHeader>
+            <DialogTitle>Annuler cet encaissement</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Motif *</Label>
+            <Textarea rows={3} value={motif} onChange={(e) => setMotif(e.target.value)} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Fermer
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => mutation.mutate()}
+              disabled={!motif.trim() || mutation.isPending}
+            >
+              {mutation.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+              Confirmer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+/* ── Open cash session dialog ─────────────────────────────────────────────── */
+function OpenCashSessionDialog({ storeId, onOpened }: { storeId: number; onOpened: () => void }) {
   const [open, setOpen] = useState(false);
   const [openingAmount, setOpeningAmount] = useState("0");
 
@@ -975,7 +1122,9 @@ function CloseCashSessionDialog({
               </p>
             </div>
             {diff !== null && diff !== 0 && (
-              <p className={`text-xs font-medium ${diff < 0 ? "text-destructive" : "text-warning"}`}>
+              <p
+                className={`text-xs font-medium ${diff < 0 ? "text-destructive" : "text-warning"}`}
+              >
                 Écart : {diff > 0 ? "+" : ""}
                 {fmtXAF(diff)} par rapport au solde attendu
               </p>

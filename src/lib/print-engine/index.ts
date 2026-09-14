@@ -11,6 +11,7 @@ export type {
   DocumentType,
   PrintOrganization,
   PrintCustomer,
+  PrintBrand,
 } from "./types";
 
 export { DEFAULT_PRINT_CONFIG } from "./types";

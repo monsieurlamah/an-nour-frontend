@@ -6,7 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, ChevronLeft, Store } from "lucide-react";
 import { storesApi, usersApi, catalogApi, qk } from "@/lib/api";
@@ -48,6 +54,8 @@ function Page() {
   const [devise, setDevise] = useState("GNF");
   const [gerantId, setGerantId] = useState<string>("");
   const [categoryId, setCategoryId] = useState<string>("");
+  const [phone, setPhone] = useState("");
+  const [remiseMax, setRemiseMax] = useState("");
 
   const { data: users = [] } = useQuery({
     queryKey: qk.users.list(),
@@ -69,16 +77,21 @@ function Page() {
         city: city.trim() || undefined,
         timezone,
         devise,
+        phone: phone.trim() || undefined,
         gerant_id: gerantId ? Number(gerantId) : undefined,
         category_store_id: categoryId ? Number(categoryId) : undefined,
+        remise_max_percent: remiseMax.trim() ? Number(remiseMax) : undefined,
       }),
     onSuccess: (store) => {
-      toast.success(`Boutique "${store.name}" créée : emplacement de stock STORE créé automatiquement.`);
+      toast.success(
+        `Boutique "${store.name}" créée : emplacement de stock STORE créé automatiquement.`,
+      );
       qc.invalidateQueries({ queryKey: ["stores"] });
       qc.invalidateQueries({ queryKey: ["stock"] });
       navigate({ to: "/app/stores/$id", params: { id: String(store.id) } });
     },
-    onError: (err) => toast.error(err instanceof Error ? err.message : "Erreur lors de la création"),
+    onError: (err) =>
+      toast.error(err instanceof Error ? err.message : "Erreur lors de la création"),
   });
 
   const canSubmit = name.trim().length > 0 && !mutation.isPending;
@@ -146,12 +159,37 @@ function Page() {
               />
             </div>
 
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>Adresse</Label>
+                <Input
+                  placeholder="Rue du Commerce, Quartier Madina…"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Téléphone</Label>
+                <Input
+                  placeholder="+224 6XX XX XX XX"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </div>
+            </div>
+
             <div className="space-y-1.5">
-              <Label>Adresse</Label>
+              <Label>
+                Taux de remise max. gérant{" "}
+                <span className="text-muted-foreground text-xs">(%, optionnel)</span>
+              </Label>
               <Input
-                placeholder="Rue du Commerce, Quartier Madina…"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
+                type="number"
+                min={0}
+                max={100}
+                placeholder="Aucun plafond"
+                value={remiseMax}
+                onChange={(e) => setRemiseMax(e.target.value)}
               />
             </div>
 
@@ -252,9 +290,10 @@ function Page() {
               <div className="flex items-start gap-3">
                 <Store className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                 <div className="text-muted-foreground text-xs leading-relaxed">
-                  À la création, un <strong className="text-foreground">emplacement de stock STORE</strong> est créé
-                  automatiquement pour cette boutique. Le stock sera alimenté
-                  par transferts depuis le Stock Central.
+                  À la création, un{" "}
+                  <strong className="text-foreground">emplacement de stock STORE</strong> est créé
+                  automatiquement pour cette boutique. Le stock sera alimenté par transferts depuis
+                  le Stock Central.
                 </div>
               </div>
             </CardContent>

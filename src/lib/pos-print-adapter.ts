@@ -2,11 +2,9 @@
 // DocumentPrintData the print engine expects. The print engine never
 // imports from this file — it only knows DocumentPrintData.
 
-import type { VenteRead, StoreRead, ClientRead } from "@/lib/types";
+import type { VenteRead, StoreRead } from "@/lib/types";
 import type { DocumentPrintData, PrintOrganization, PrintCustomer } from "@/lib/print-engine";
 import { PAYMENT_METHOD_LABEL } from "@/lib/payment-engine";
-import type { CartLine } from "@/lib/pos-cart";
-import { lineGrossAmount, lineNetAmount, type CartTotals } from "@/lib/pos-cart";
 
 /** The payment method labels stored in the reference field as the first
  * token (set by toApiPayments when the UI mode differs from the backend mode). */
@@ -43,8 +41,10 @@ export function saleToDocument(
     address: opts.store?.address ?? undefined,
     phone: undefined, // StoreRead has no phone field today
     nif: undefined, // not in StoreRead today; ready when added
-    // Sale receipts are issued by the boutique itself, never the group.
+    // Sale receipts are issued by the boutique itself, never the group —
+    // boutique logo + the Immobilier & Déco letterhead on A4.
     logo: "/logoBoutique.jpeg",
+    brand: "boutique",
   };
 
   const customer: PrintCustomer | undefined = vente.client_id
@@ -59,6 +59,11 @@ export function saleToDocument(
     lineTotal: Number(l.total_ligne),
   }));
 
+  // The official facture number exists from the moment the sale is
+  // finalised (direct sale or proforma → facture); it is the document's
+  // reference everywhere, the internal VENTE-id only a fallback.
+  const reference = vente.numero_facture ?? `VENTE-${vente.id}`;
+
   const payments = (vente.paiements ?? []).map((p) => ({
     method: resolveMethodLabel(p.mode, p.reference ?? null),
     amount: Number(p.montant),
@@ -67,7 +72,7 @@ export function saleToDocument(
 
   return {
     type: "sale_receipt",
-    reference: `VENTE-${vente.id}`,
+    reference,
     date: vente.created_at,
     createdAt: vente.created_at,
     organization,
@@ -83,7 +88,7 @@ export function saleToDocument(
     payments,
     amountPaid: Number(vente.montant_paye ?? 0),
     amountDue: Number(vente.montant_restant ?? 0),
-    qrContent: `VENTE-${vente.id}`,
+    qrContent: reference,
     footerOverride: opts.footerMessage,
     deliveryNotice: vente.livraison_statut === "non_livre" ? "NON LIVRÉ — EN ATTENTE DE LIVRAISON" : undefined,
   };
@@ -106,6 +111,7 @@ export function saleToDeliveryNoteDocument(
     name: opts.store?.name ?? "AN-NOUR",
     address: opts.store?.address ?? undefined,
     logo: "/logoBoutique.jpeg",
+    brand: "boutique",
   };
 
   const customer: PrintCustomer | undefined = vente.client_id
@@ -134,62 +140,70 @@ export function saleToDeliveryNoteDocument(
     amountPaid: 0,
     amountDue: 0,
     qrContent: vente.numero_bon_livraison ?? undefined,
-    footerOverride: "Bon de livraison — à conserver.",
+    notes: vente.numero_facture
+      ? `Livraison relative à la facture ${vente.numero_facture}. Bon de livraison à conserver.`
+      : "Bon de livraison à conserver.",
   };
 }
 
-/** A pre-sale "facture" built straight from the live cart — no Vente exists
- * yet at this point in the flow (product selection → facture → encaissement).
- * Purely a client-side preview/print; nothing here is persisted. */
-export function cartToInvoiceDocument(
-  lines: CartLine[],
-  totals: CartTotals,
+/** The devis (cahier des charges §9.1) — built from a real, persisted Vente
+ * (statut "proforma"/"proforma_expiree"/"proforma_rejetee"), never from the
+ * live cart: unlike the old client-side-only preview this replaces, a
+ * proforma must be a numbered, trackable record from the moment it exists —
+ * VenteService.create_proforma is called *before* this is ever rendered. */
+export function saleToProformaDocument(
+  vente: VenteRead,
   opts: {
     store?: StoreRead | null;
     vendeurName?: string;
-    client?: ClientRead | null;
+    clientName?: string | null;
+    productName?: (id: number) => string;
   } = {},
 ): DocumentPrintData {
   const organization: PrintOrganization = {
     name: opts.store?.name ?? "AN-NOUR",
     address: opts.store?.address ?? undefined,
     logo: "/logoBoutique.jpeg",
+    brand: "boutique",
   };
 
-  const customer: PrintCustomer | undefined = opts.client
-    ? { name: `${opts.client.name}${opts.client.prenom ? ` ${opts.client.prenom}` : ""}`, phone: opts.client.phone ?? undefined }
+  const customer: PrintCustomer | undefined = vente.client_id
+    ? { name: opts.clientName ?? `Client #${vente.client_id}` }
     : undefined;
 
-  const documentLines = lines.map((line) => ({
-    name: line.name,
-    quantity: line.quantity,
-    unitPrice: line.unitPrice,
-    lineDiscount: lineGrossAmount(line) - lineNetAmount(line),
-    lineTotal: lineNetAmount(line),
+  const lines = (vente.lignes ?? []).map((l) => ({
+    name: opts.productName?.(l.produit_id) ?? `Produit #${l.produit_id}`,
+    quantity: l.quantite,
+    unitPrice: Number(l.prix_unitaire),
+    lineDiscount: l.remise ? Number(l.remise) : 0,
+    lineTotal: Number(l.total_ligne),
   }));
 
-  const now = new Date().toISOString();
-
   return {
-    type: "invoice",
-    reference: `FACT-${Date.now()}`,
-    date: now,
-    createdAt: now,
+    type: "quote",
+    reference: vente.numero_proforma ?? `PRO-${vente.id}`,
+    date: vente.created_at,
+    createdAt: vente.created_at,
     organization,
-    issuer: opts.vendeurName ? { name: opts.vendeurName, role: "Caissier" } : undefined,
+    issuer: opts.vendeurName ? { name: opts.vendeurName, role: "Vendeur" } : undefined,
     customer,
-    lines: documentLines,
+    lines,
     totals: {
-      subtotal: totals.subtotal,
-      lineDiscounts: totals.lineDiscounts,
-      globalDiscount: totals.globalDiscount,
-      taxBase: totals.taxableBase,
-      tax: totals.tax,
-      total: totals.total,
+      subtotal: lines.reduce((a, l) => a + l.unitPrice * l.quantity, 0),
+      lineDiscounts: lines.reduce((a, l) => a + (l.lineDiscount ?? 0), 0),
+      globalDiscount: vente.remise ? Number(vente.remise) : 0,
+      total: Number(vente.montant_total),
     },
     payments: [],
     amountPaid: 0,
-    amountDue: totals.total,
-    footerOverride: "Facture — en attente d'encaissement.",
+    amountDue: Number(vente.montant_total),
+    qrContent: vente.numero_proforma ?? undefined,
+    validUntil: vente.proforma_valide_jusquau ?? undefined,
+    notes:
+      vente.statut === "proforma_rejetee"
+        ? "Proforma refusée par le client."
+        : vente.statut === "proforma_expiree"
+        ? "Proforma expirée — sans impact sur le stock."
+        : "Facture proforma — sans impact sur le stock tant qu'elle n'est pas transformée en facture définitive.",
   };
 }
