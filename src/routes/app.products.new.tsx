@@ -102,6 +102,7 @@ function Page() {
   const [tva, setTva] = useState("0");
   const [prixAchat, setPrixAchat] = useState("");
   const [prixVente, setPrixVente] = useState("");
+  const [plafondCredit, setPlafondCredit] = useState("");
   const [categoryId, setCategoryId] = useState<string>("");
   const [status, setStatus] = useState<"active" | "inactive">("active");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -134,6 +135,7 @@ function Page() {
         images: imageUrl ? [imageUrl] : undefined,
         prix_achat: Number(prixAchat),
         prix_vente: Number(prixVente),
+        plafond_credit_ligne: plafondCredit.trim() ? Number(plafondCredit) : undefined,
         category_product_id: categoryId ? Number(categoryId) : undefined,
       }),
     onSuccess: (product) => {
@@ -307,6 +309,21 @@ function Page() {
                     onChange={(e) => setTva(e.target.value)}
                   />
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Plafond de crédit par ligne (GNF)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  placeholder="Aucun plafond"
+                  value={plafondCredit}
+                  onChange={(e) => setPlafondCredit(e.target.value)}
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Optionnel. Vide = aucun plafond spécifique à ce produit — seul le plafond
+                  du client s'applique aux ventes à crédit.
+                </p>
               </div>
 
               {margin !== null && (

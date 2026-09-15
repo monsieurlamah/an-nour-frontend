@@ -62,14 +62,16 @@ function Page() {
     if (!user) return;
     setFirstname(user.firstname);
     setLastname(user.lastname);
-    setEmail(user.email);
+    setEmail(user.email ?? "");
     setPhone(user.phone ?? "");
   }, [user]);
 
   const saveMutation = useMutation({
     mutationFn: () => {
       if (!user) throw new Error("Utilisateur introuvable");
-      return usersApi.update(user.id, { firstname, lastname, email, phone: phone || undefined });
+      return usersApi.update(user.id, {
+        firstname, lastname, email: email.trim() || undefined, phone: phone || undefined,
+      });
     },
     onMutate: () => setAccountErrors({}),
     onSuccess: async () => {
@@ -157,7 +159,7 @@ function Page() {
               <h2 className="text-lg font-semibold">{user.firstname} {user.lastname}</h2>
               <Badge variant="secondary">{roleLabel(user)}</Badge>
             </div>
-            <p className="text-sm text-muted-foreground">{user.email}</p>
+            <p className="text-sm text-muted-foreground">{user.email ?? user.identifiant}</p>
           </div>
         </CardContent>
       </Card>
@@ -208,6 +210,10 @@ function Page() {
             <div className="space-y-1.5">
               <Label>{t("common.role") as string}</Label>
               <Input value={roleLabel(user)} disabled />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Identifiant</Label>
+              <Input value={user.identifiant} disabled className="font-mono" />
             </div>
             <div className="sm:col-span-2">
               <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>

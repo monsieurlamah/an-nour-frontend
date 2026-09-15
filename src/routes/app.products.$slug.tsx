@@ -108,6 +108,7 @@ function Page() {
   const [editTva, setEditTva] = useState("0");
   const [editPrixAchat, setEditPrixAchat] = useState("");
   const [editPrixVente, setEditPrixVente] = useState("");
+  const [editPlafondCredit, setEditPlafondCredit] = useState("");
   const [editCat, setEditCat] = useState("");
   const [editStatus, setEditStatus] = useState<"active" | "inactive">("active");
   const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
@@ -124,6 +125,9 @@ function Page() {
     setEditTva(String(product.tva ?? 0));
     setEditPrixAchat(String(product.prix_achat));
     setEditPrixVente(String(product.prix_vente));
+    setEditPlafondCredit(
+      product.plafond_credit_ligne != null ? String(product.plafond_credit_ligne) : "",
+    );
     setEditCat(product.category_product_id ? String(product.category_product_id) : "");
     setEditStatus(product.status === "active" ? "active" : "inactive");
     setEditImageUrl(product.images?.[0] ?? null);
@@ -144,6 +148,7 @@ function Page() {
         images: editImageUrl ? [editImageUrl] : undefined,
         prix_achat: Number(editPrixAchat),
         prix_vente: Number(editPrixVente),
+        plafond_credit_ligne: editPlafondCredit.trim() ? Number(editPlafondCredit) : null,
         category_product_id: editCat ? Number(editCat) : undefined,
       }),
     onSuccess: () => {
@@ -553,6 +558,21 @@ function Page() {
                         onChange={(e) => setEditTva(e.target.value)}
                       />
                     </div>
+                  </div>
+                  <div className="mt-4 space-y-1.5">
+                    <Label>Plafond de crédit par ligne (GNF)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={editPlafondCredit}
+                      onChange={(e) => setEditPlafondCredit(e.target.value)}
+                      placeholder="Aucun plafond"
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      Vide = aucun plafond spécifique à ce produit (seul le plafond du client
+                      s'applique). Sinon, aucune ligne de vente à crédit pour ce produit ne
+                      peut dépasser ce montant.
+                    </p>
                   </div>
                 </CardContent>
               </Card>

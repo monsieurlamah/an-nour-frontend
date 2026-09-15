@@ -165,6 +165,8 @@
   "auth.welcome": "Welcome to AN-NOUR",
   "auth.subtitle": "Sign in to your executive dashboard.",
   "auth.email": "Email address",
+  "auth.loginId": "Identifiant or email address",
+  "auth.loginIdPlaceholder": "Identifiant or you@example.com",
   "auth.password": "Password",
   "auth.remember": "Remember me",
   "auth.forgot": "Forgot password?",

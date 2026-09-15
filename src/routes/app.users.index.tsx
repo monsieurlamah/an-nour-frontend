@@ -111,7 +111,8 @@ function Page() {
     const matchQ =
       !q ||
       `${u.firstname} ${u.lastname}`.toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q);
+      (u.email ?? "").toLowerCase().includes(q) ||
+      u.identifiant.toLowerCase().includes(q);
     const matchStatus = statusFilter === "all" || u.status === statusFilter;
     return matchQ && matchStatus;
   });
@@ -172,7 +173,7 @@ function Page() {
           <div className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Rechercher par nom ou email…"
+              placeholder="Rechercher par nom, identifiant ou email…"
               className="h-9 pl-8"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -261,7 +262,9 @@ function Page() {
                           >
                             {u.firstname} {u.lastname}
                           </Link>
-                          <div className="truncate text-xs text-muted-foreground">{u.email}</div>
+                          <div className="truncate text-xs text-muted-foreground">
+                            {u.email ?? u.identifiant}
+                          </div>
                         </div>
                       </div>
                     </TableCell>
@@ -317,7 +320,7 @@ function Page() {
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => sendCredsMutation.mutate(u.id)}
-                              disabled={sendCredsMutation.isPending}
+                              disabled={sendCredsMutation.isPending || !u.email}
                             >
                               <Mail className="mr-2 h-3.5 w-3.5" /> Envoyer les accès
                             </DropdownMenuItem>
@@ -406,7 +409,7 @@ function Page() {
             <AlertDialogDescription>
               Vous êtes sur le point de supprimer{" "}
               <strong>{deleteTarget?.firstname} {deleteTarget?.lastname}</strong>{" "}
-              ({deleteTarget?.email}). Cette action est irréversible.
+              ({deleteTarget?.email ?? deleteTarget?.identifiant}). Cette action est irréversible.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -465,12 +468,18 @@ function CreateUserDialog({
     enabled: open,
   });
 
+  const hasEmail = email.trim().length > 0;
+
+  useEffect(() => {
+    if (!hasEmail) setSendCredentials(false);
+  }, [hasEmail]);
+
   const mutation = useMutation({
     mutationFn: async () => {
       const user = await usersApi.create({
         firstname: firstname.trim(),
         lastname: lastname.trim(),
-        email: email.trim(),
+        email: hasEmail ? email.trim() : undefined,
         phone: phone.trim() || undefined,
         password,
         status: "active",
@@ -489,7 +498,12 @@ function CreateUserDialog({
       return user;
     },
     onSuccess: (user) => {
-      toast.success(`Utilisateur "${user.firstname} ${user.lastname}" créé`);
+      // Always surface the identifiant here — it's the one credential the
+      // super-admin has to relay by hand when there's no email to send it to.
+      toast.success(
+        `Utilisateur "${user.firstname} ${user.lastname}" créé — identifiant : ${user.identifiant}`,
+        { duration: 10000 },
+      );
       qc.invalidateQueries({ queryKey: ["users"] });
       qc.invalidateQueries({ queryKey: ["access"] });
       onClose();
@@ -501,7 +515,7 @@ function CreateUserDialog({
   });
 
   const passwordError = password ? validatePassword(password) : null;
-  const canSubmit = firstname.trim() && lastname.trim() && email.trim() && validatePassword(password) === null && !mutation.isPending;
+  const canSubmit = firstname.trim() && lastname.trim() && validatePassword(password) === null && !mutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -521,8 +535,12 @@ function CreateUserDialog({
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label>Email *</Label>
+            <Label>Email (optionnel)</Label>
             <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <p className="text-[11px] text-muted-foreground">
+              Un identifiant de connexion unique sera généré automatiquement — utile pour se
+              connecter sans e-mail.
+            </p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
@@ -582,12 +600,23 @@ function CreateUserDialog({
             <Checkbox
               id="send-creds"
               checked={sendCredentials}
+              disabled={!hasEmail}
               onCheckedChange={(v) => setSendCredentials(!!v)}
             />
-            <label htmlFor="send-creds" className="text-sm cursor-pointer select-none">
+            <label
+              htmlFor="send-creds"
+              className="text-sm cursor-pointer select-none peer-disabled:cursor-not-allowed"
+            >
               Envoyer les identifiants de connexion par email
+              {!hasEmail && " (nécessite une adresse e-mail)"}
             </label>
           </div>
+          {!hasEmail && (
+            <p className="text-xs text-muted-foreground">
+              Sans e-mail, communiquez l'identifiant et le mot de passe à l'utilisateur
+              directement — ils seront affichés une fois le compte créé.
+            </p>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Annuler</Button>

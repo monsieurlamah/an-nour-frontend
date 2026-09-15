@@ -11,7 +11,8 @@ export type AuthUser = {
   uuid: string;
   firstname: string;
   lastname: string;
-  email: string;
+  email: string | null;
+  identifiant: string;
   phone: string | null;
   avatar: string | null;
   status: string;

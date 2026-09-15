@@ -623,7 +623,9 @@ function ProfileMenu() {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>{user?.email ?? (t("common.myAccount") as string)}</DropdownMenuLabel>
+        <DropdownMenuLabel>
+          {user?.email ?? user?.identifiant ?? (t("common.myAccount") as string)}
+        </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link to="/app/profile">{t("nav.profile")}</Link>

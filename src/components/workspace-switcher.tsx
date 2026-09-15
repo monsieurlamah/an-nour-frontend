@@ -47,6 +47,26 @@ export function WorkspaceSwitcher() {
 
   const Icon = workspace.kind === "store" ? StoreIcon : Building2;
 
+  // A store-scoped role (gérant, vendeur, caissier, comptable, observateur…)
+  // is confined to the single boutique they're assigned to — no HQ view, no
+  // switching to another store. Show their boutique as a static label, not
+  // an interactive control, so there's nothing to open and nothing to pick.
+  if (!canView) {
+    return (
+      <div className="flex h-9 max-w-[260px] items-center gap-2 px-2.5">
+        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-info/10 text-info">
+          <Icon className="h-3.5 w-3.5" />
+        </span>
+        <span className="hidden min-w-0 flex-col items-start leading-tight sm:flex">
+          <span className="max-w-[160px] truncate text-xs font-semibold">{label.title}</span>
+          {label.subtitle && (
+            <span className="max-w-[160px] truncate text-[10px] text-muted-foreground">{label.subtitle}</span>
+          )}
+        </span>
+      </div>
+    );
+  }
+
   return (
     <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setQuery(""); }}>
       <PopoverTrigger asChild>

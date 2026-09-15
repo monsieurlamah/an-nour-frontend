@@ -165,6 +165,8 @@
   "auth.welcome": "Bienvenue sur AN-NOUR",
   "auth.subtitle": "Connectez-vous à votre tableau de bord exécutif.",
   "auth.email": "Adresse e-mail",
+  "auth.loginId": "Identifiant ou adresse e-mail",
+  "auth.loginIdPlaceholder": "Identifiant ou vous@exemple.com",
   "auth.password": "Mot de passe",
   "auth.remember": "Se souvenir de moi",
   "auth.forgot": "Mot de passe oublié ?",

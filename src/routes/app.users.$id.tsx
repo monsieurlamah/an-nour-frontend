@@ -119,7 +119,7 @@ function Page() {
     <>
       <PageHeader
         title={`${user.firstname} ${user.lastname}`}
-        description={user.email}
+        description={user.email ?? user.identifiant}
         actions={
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" asChild>
@@ -140,7 +140,7 @@ function Page() {
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => sendCredsMutation.mutate()}
-                    disabled={sendCredsMutation.isPending}
+                    disabled={sendCredsMutation.isPending || !user.email}
                   >
                     <Mail className="mr-2 h-3.5 w-3.5" /> Envoyer les accès par email
                   </DropdownMenuItem>
@@ -177,20 +177,26 @@ function Page() {
               </Avatar>
               <div>
                 <p className="font-semibold">{user.firstname} {user.lastname}</p>
-                <p className="text-sm text-muted-foreground">{user.email}</p>
+                <p className="text-sm text-muted-foreground">{user.email ?? "Pas d'e-mail"}</p>
               </div>
               <StatusBadge status={user.status} />
             </div>
 
             <div className="mt-6 space-y-3 text-sm">
               <div className="flex justify-between">
+                <span className="text-muted-foreground">Identifiant</span>
+                <span className="font-mono text-xs">{user.identifiant}</span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-muted-foreground">Téléphone</span>
                 <span>{user.phone ?? ""}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Email vérifié</span>
-                <StatusBadge status={user.email_verified ? "active" : "pending"} />
-              </div>
+              {user.email && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Email vérifié</span>
+                  <StatusBadge status={user.email_verified ? "active" : "pending"} />
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Mot de passe temporaire</span>
                 <span>
@@ -229,7 +235,8 @@ function Page() {
                   size="sm"
                   variant="outline"
                   onClick={() => sendCredsMutation.mutate()}
-                  disabled={sendCredsMutation.isPending}
+                  disabled={sendCredsMutation.isPending || !user.email}
+                  title={!user.email ? "Cet utilisateur n'a pas d'e-mail" : undefined}
                 >
                   {sendCredsMutation.isPending ? (
                     <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />

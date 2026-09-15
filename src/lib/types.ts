@@ -28,7 +28,9 @@ export interface UserRead {
   uuid: string;
   firstname: string;
   lastname: string;
-  email: string;
+  // Optional — a user without an email logs in with `identifiant` instead.
+  email: string | null;
+  identifiant: string;
   phone: string | null;
   address: string | null;
   avatar: string | null;
@@ -44,7 +46,8 @@ export interface UserRead {
 export interface UserCreate {
   firstname: string;
   lastname: string;
-  email: string;
+  // Optional — the identifiant is generated server-side and always present.
+  email?: string;
   phone?: string;
   address?: string;
   avatar?: string;
@@ -57,7 +60,7 @@ export interface UserCreate {
 export interface UserUpdate {
   firstname?: string;
   lastname?: string;
-  email?: string;
+  email?: string | null;
   phone?: string;
   address?: string;
   avatar?: string;
@@ -149,6 +152,9 @@ export interface ProductRead extends EntityRead {
   images: string[] | null;
   prix_vente: number;
   prix_achat: number;
+  /** Optionnel — plafond de crédit par ligne pour ce produit (§8.1 extension).
+   * null = pas de plafond configuré, seul le plafond du client s'applique. */
+  plafond_credit_ligne: number | null;
   category_product_id: number | null;
   created_by: number | null;
 }
@@ -165,6 +171,7 @@ export interface ProductCreate {
   images?: string[];
   prix_vente: number;
   prix_achat: number;
+  plafond_credit_ligne?: number | null;
   category_product_id?: number;
 }
 
